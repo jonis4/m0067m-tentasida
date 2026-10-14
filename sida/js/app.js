@@ -819,7 +819,7 @@
   // Sidfoten är en enda rad (layoutspec §2 och §7). Bara sådant som kräver handling visas därutöver.
   function renderaSidfot() {
     let varning = "";
-    if (!Status.sparbar) varning += "<p><strong>Statusen kan inte sparas i den här webbläsaren.</strong> Exportera under Inställningar innan du stänger fliken.</p>";
+    if (!Status.sparbar) varning += "<p><strong>Statusen kan inte sparas i den här webbläsaren.</strong> Ladda ner en kopia under Inställningar innan du stänger fliken.</p>";
     if (Sparfil.stod && (Sparfil.lage === "behover-ok" || Sparfil.lage === "fel")) varning += sparfilRad();
     sidfot.innerHTML = varning + '<p><a href="#/strategi">Strategi</a> · <a href="#/installningar">Inställningar</a></p>';
     const instEl = document.getElementById("installningar");
@@ -828,28 +828,31 @@
 
   function installningarInnehall() {
     const n = Status.antal();
-    let status;
+    let kopia;
     if (sidfotLage && sidfotLage.typ === "import") {
-      status = "<p>Filen innehåller status för " + sidfotLage.granskning.antal + " uppgifter. Den ersätter nuvarande status ("
+      kopia = "<p>Kopian innehåller status för " + sidfotLage.granskning.antal + " uppgifter. Den ersätter det du har nu ("
         + n + " uppgifter).</p>"
-        + '<p><button type="button" class="knapp" data-sidfot="importera-ok">Importera</button> '
+        + '<p><button type="button" class="knapp" data-sidfot="importera-ok">Ersätt med kopian</button> '
         + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
     } else if (sidfotLage && sidfotLage.typ === "rensa") {
-      status = "<p>Rensa status för alla " + n + " uppgifter?</p>"
-        + '<p><button type="button" class="knapp" data-sidfot="rensa-ok">Rensa</button> '
+      kopia = "<p>Rensa status för alla " + n + " uppgifter?</p>"
+        + '<p><button type="button" class="knapp" data-sidfot="rensa-ok">Rensa all status</button> '
         + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
     } else {
-      status = (sidfotLage && sidfotLage.typ === "meddelande"
+      kopia = (sidfotLage && sidfotLage.typ === "meddelande"
           ? '<p class="meddelande">' + esc(sidfotLage.text)
             + (sidfotLage.angra ? ' <button type="button" class="lank" data-sidfot="angra">Ångra</button>' : "") + "</p>"
           : "")
-        + '<p class="tyst">Status för ' + n + " av " + Object.keys(B.uppgifter).length + " uppgifter sparas i webbläsaren.</p>"
-        + '<p><button type="button" class="lank" data-sidfot="exportera">Exportera</button> · '
-        + '<button type="button" class="lank" data-sidfot="importera">Importera</button> · '
-        + '<button type="button" class="lank" data-sidfot="rensa">Rensa</button></p>'
-        + sparfilRad();
+        + '<p class="tyst">Statusen försvinner om du rensar webbläsardata eller byter webbläsare eller dator. En kopia på disken skyddar mot det.</p>'
+        + sparfilRad()
+        + '<p>För hand: <button type="button" class="lank" data-sidfot="exportera">Ladda ner en kopia</button> · '
+        + '<button type="button" class="lank" data-sidfot="importera">Läs in en kopia</button></p>'
+        + '<p class="rensa-rad"><button type="button" class="lank" data-sidfot="rensa">Rensa all status</button></p>';
     }
-    return '<section class="installning"><h2 class="del">Status</h2>' + status + "</section>"
+    return '<section class="installning"><h2 class="del">Status</h2>'
+      + "<p>Allt du markerar sparas automatiskt i webbläsaren. Du behöver inte trycka på något.</p>"
+      + '<p class="tyst">' + n + " av " + Object.keys(B.uppgifter).length + " uppgifter har status.</p></section>"
+      + '<section class="installning"><h2 class="del">Säkerhetskopia</h2>' + kopia + "</section>"
       + (Object.keys(SCHEMOR).length ? '<section class="installning"><h2 class="del">Schema</h2>' + schemaRad() + "</section>" : "")
       + '<section class="installning"><h2 class="del">Tema</h2>' + temaRad() + "</section>"
       + '<section class="installning"><h2 class="del">Strategirader</h2>'
@@ -863,23 +866,24 @@
     return kontextrad("#/idag", "") + "<h1>Inställningar</h1>" + '<div id="installningar">' + installningarInnehall() + "</div>";
   }
 
+  // Automatisk säkerhetskopia till en fil (bara Edge/Chrome). Statusen sparas alltid i webbläsaren ändå.
   function sparfilRad() {
-    if (!Sparfil.stod) return "";
+    if (!Sparfil.stod) return '<p class="tyst">Automatisk kopia till fil fungerar bara i Edge och Chrome. Använd "Ladda ner en kopia" nedan.</p>';
     const namn = esc(Sparfil.namn || "");
     const sluta = ' · <button type="button" class="lank" data-sidfot="sparfil-sluta">Sluta</button>';
     switch (Sparfil.lage) {
       case "aktiv":
-        return "<p>Sparas automatiskt i " + namn
-          + ' · <button type="button" class="lank" data-sidfot="sparfil-valj">Byt fil</button>' + sluta + "</p>";
+        return "<p>En kopia skrivs automatiskt till <strong>" + namn + "</strong> varje gång du markerar något."
+          + ' <button type="button" class="lank" data-sidfot="sparfil-valj">Byt fil</button>' + sluta + "</p>";
       case "behover-ok":
-        return '<p><button type="button" class="knapp" data-sidfot="sparfil-ateranslut">Fortsätt spara automatiskt i ' + namn + "</button>"
-          + sluta + "</p>";
+        return '<p><button type="button" class="knapp" data-sidfot="sparfil-ateranslut">Fortsätt kopiera till ' + namn + "</button>"
+          + sluta + '</p><p class="tyst">Webbläsaren vill att du godkänner kopian en gång per besök. Statusen sparas ändå i webbläsaren.</p>';
       case "fel":
-        return "<p><strong>Kunde inte spara till " + namn + ".</strong> "
+        return "<p><strong>Kunde inte skriva kopian till " + namn + ".</strong> "
           + '<button type="button" class="lank" data-sidfot="sparfil-valj">Välj fil igen</button>' + sluta + "</p>";
       default:
-        return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Spara automatiskt till fil…</button>'
-          + ' <span class="tyst">(varje ändring skrivs till en fil du väljer)</span></p>';
+        return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Välj en fil att kopiera till…</button>'
+          + ' <span class="tyst">Filen uppdateras sedan av sig själv varje gång du markerar något.</span></p>';
     }
   }
 
@@ -967,7 +971,7 @@
     else if (handling === "avbryt") sidfotLage = null;
     else if (handling === "importera-ok") {
       Status.ersattAllt(sidfotLage.granskning.uppgifter);
-      sidfotLage = { typ: "meddelande", text: "Statusen är importerad.", angra: true, ny: true };
+      sidfotLage = { typ: "meddelande", text: "Kopian är inläst.", angra: true, ny: true };
       rendera();
       return;
     } else if (handling === "rensa-ok") {

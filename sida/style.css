@@ -423,3 +423,4 @@ details.mall > .text { margin-top: 0.8rem; padding: 1rem 1.2rem 0.2rem; backgrou
 .kopiera-rad { margin: 0.4rem 0 0; font-size: 0.88rem; color: var(--tyst); }
 .kopiera-rad .lank { color: var(--tyst); }
 .kopiera-rad .lank:hover { color: var(--text); }
+.installning .rensa-rad { margin-top: 1.2rem; font-size: 0.88rem; }
