@@ -264,7 +264,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - [x] Fas 3 – Status
 - [x] Fas 4 – Kapitel (utan planeringsappen, se Beslut)
 - [x] Fas 5 – Schema och Idag
-- [ ] Fas 6 – Tentaläge
+- [x] Fas 6 – Tentaläge
 - [ ] Fas 7 – Strategi, Repetera och examinatormallar
 - [ ] Fas 8 – Finslipning
 
@@ -287,6 +287,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Kapitel bygger i stället på tentauppgifterna: stapeln = andel av avsnittets uppgifter (utom bevis) med status `sjalv` eller `sitter`. Sortering: Ordning / Svagast först (flikarna ligger överst, inte längst ner som i specen). Rutter: `#/kapitel`, `#/kapitel/1.4`, `#/kapitel/1.4/<uppgift-id>`. Avsnittsnamnen i `mappning.json` är bokens titlar.
 - Fas 5: "säkerheten per kapitel från planeringsappen" ersätts av Kapitel-staplarna och det Jonatan själv säger.
 - Fas 5: schemat är godkänt (14 okt, reviderat: start 15 okt, läs 6.5 först) och ligger i `sida/data/schema.json`. `build.py` validerar det och skriver `data/schema.js`. Jonatan pluggar 2–3 h på vardagar, ett morgonpass per helg, siktar på betyg 3 (kanske 4). Hela tentor = del G (uppg. 1–6) på 3 h, t260319 den 20 okt och t260827 den 23 okt. Bevis och diag3 är inte med i schemat. Rutter: `#/idag`, `#/idag/<datum>`, `#/idag/<datum>/<pass>/<uppgift-id>`, `#/idag/schema`. `window.IDAG_DATUM` kan sättas i tester för att låtsas att det är en annan dag.
+- Fas 6: tentaläget startas från Bank (`#/tentalage/ny/bank/<tenta>`, 9 uppg., 5 h) eller från ett tentapass i Idag (`#/tentalage/ny/idag/<datum>/<pass>`, passets uppgifter och `tid`). Pågående tenta i localStorage `m0067m.tentalage.v1` (starttid, inlämnad, timerDold, aktuell). Timern räknas från starttiden. Under pågående tenta omdirigeras alla andra rutter till tentan. Typ/avsnitt döljs under tentan och visas i genomgången. `bank.js` innehåller `profil.tentansForm` och `profil.formelblad`, ordagrant ur kunskapsbasen. Tentapass i Idag listar inte uppgifterna.
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**

@@ -157,10 +157,14 @@
             + '<span class="pil" aria-hidden="true">→</span></a></li>';
         }).join("");
         const forsta = ps.uppgifter.find((id) => !klarad(id)) || ps.uppgifter[0];
+        // Ett tentapass listar inte uppgifterna (avsnitt och typ skulle avslöja metoden).
+        const knapp = ps.tenta
+          ? '<p><a class="knapp-stor" href="#/tentalage/ny/idag/' + visad + "/" + nr + '">Starta tentaläge</a></p>'
+          : forsta ? '<p><a class="knapp-stor" href="#/idag/' + visad + "/" + nr + "/" + forsta + '">Starta</a></p>' : "";
         html += '<section class="pass"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
           + '<p class="pass-beskrivning">' + esc(passBeskrivning(ps)) + "</p>"
-          + (rader ? '<ul class="rader">' + rader + "</ul>" : "")
-          + (forsta ? '<p><a class="knapp-stor" href="#/idag/' + visad + "/" + nr + "/" + forsta + '">Starta</a></p>' : "")
+          + (rader && !ps.tenta ? '<ul class="rader">' + rader + "</ul>" : "")
+          + knapp
           + "</section>";
       });
     }
@@ -204,6 +208,189 @@
       visaKalla: true,
     };
   }
+
+  // ---------- Tentaläge (layoutspec §6) ----------
+  // Pågående tenta sparas i localStorage så att den överlever omladdning och flikbyte.
+  // Timern räknas alltid från starttiden, aldrig genom att räkna ner ett tal.
+  const TL_NYCKEL = "m0067m.tentalage.v1";
+  let tl = (() => { try { return JSON.parse(localStorage.getItem(TL_NYCKEL)) || null; } catch (e) { return null; } })();
+  let tlFraga = null; // null | "avbryt" | "lamna"
+  let tlFormelblad = false;
+
+  function sparaTL() {
+    try {
+      if (tl) localStorage.setItem(TL_NYCKEL, JSON.stringify(tl));
+      else localStorage.removeItem(TL_NYCKEL);
+    } catch (e) { /* fungerar ändå så länge fliken är öppen */ }
+  }
+
+  // Vad som ska skrivas: från en tenta i Bank eller från ett tentapass i Idag.
+  function tlUpplagg(delar) {
+    const [, , kalla, a, b] = delar;
+    if (kalla === "bank" && tentaMap[a] && delar.length === 4) {
+      const t = tentaMap[a];
+      return { namn: t.namn, uppgifter: t.uppgifter.slice(), tidMin: 300, tillbaka: "#/bank/" + t.id, kallaHref: "#/tentalage/ny/bank/" + t.id };
+    }
+    if (kalla === "idag" && dagMap[a] && dagMap[a].pass && delar.length === 5) {
+      const ps = dagMap[a].pass[+b - 1];
+      if (!ps || !ps.tenta) return null;
+      return { namn: tentaMap[ps.tenta].namn, uppgifter: ps.uppgifter.slice(), tidMin: ps.tid || 300,
+        tillbaka: "#/idag/" + a, kallaHref: "#/tentalage/ny/idag/" + a + "/" + b };
+    }
+    return null;
+  }
+
+  const tidText = (min) => { const h = Math.floor(min / 60), m = min % 60; return h + " h" + (m ? " " + m + " min" : ""); };
+
+  function vyTentaStart(upp) {
+    document.title = "Tentaläge · " + upp.namn + " · M0067M";
+    const nr = upp.uppgifter.map((id) => B.uppgifter[id].nr);
+    const helTenta = upp.uppgifter.length === 9;
+    const omfang = helTenta ? "Hela tentan: 9 uppgifter à 4 p, skrivtid " + tidText(upp.tidMin) + "."
+      : "Det här passet: uppgift " + nr[0] + "–" + nr[nr.length - 1] + " (" + upp.uppgifter.length * 4 + " p), skrivtid " + tidText(upp.tidMin) + ".";
+    return kontextrad(upp.tillbaka, "")
+      + '<h1>' + esc(upp.namn) + '</h1><p class="tyst">Tentaläge</p>'
+      + '<p class="tl-omfang">' + omfang + "</p>"
+      + '<h2 class="del">Tentans form</h2>'
+      + '<div class="text tl-form">' + Format.formatera(B.profil.tentansForm, null, "profil tentans form") + "</div>"
+      + '<p class="tyst">I tentaläget syns ingen navigering, inga lösningar och inga statusval. Formelbladet finns. '
+      + "Timern går även om du byter flik, och du kan dölja den.</p>"
+      + '<p><button type="button" class="knapp-stor" data-tl="starta">Starta tentan</button></p>';
+  }
+
+  function tlTimerText() {
+    if (!tl || !tl.start) return "";
+    const slut = tl.inlamnad ? Date.parse(tl.inlamnad) : Date.now();
+    const gatt = Math.floor((slut - Date.parse(tl.start)) / 1000);
+    if (tl.inlamnad) return "Inlämnad efter " + Math.floor(gatt / 3600) + " h " + Math.floor((gatt % 3600) / 60) + " min";
+    if (tl.timerDold) return "Tiden är dold";
+    const kvar = tl.tidMin * 60 - gatt;
+    if (kvar <= 0) return "Tiden är ute";
+    return Math.floor(kvar / 3600) + ":" + tvaSiffror(Math.floor((kvar % 3600) / 60)) + ":" + tvaSiffror(kvar % 60);
+  }
+
+  function vyTentalage(nr) {
+    const i = Math.min(Math.max((+nr || 1) - 1, 0), tl.uppgifter.length - 1);
+    tl.aktuell = i + 1;
+    sparaTL();
+    const id = tl.uppgifter[i];
+    const u = B.uppgifter[id];
+    const tenta = tentaMap[u.tenta];
+    const genomgang = !!tl.inlamnad;
+    document.title = (genomgang ? "Genomgång" : "Tentaläge") + " · " + tl.namn + " · M0067M";
+    const href = (j) => "#/tentalage/" + (j + 1);
+    tangentKontext = {
+      forra: i > 0 ? href(i - 1) : null,
+      nasta: i + 1 < tl.uppgifter.length ? href(i + 1) : null,
+      uppgift: genomgang ? id : null, // statustangenterna fungerar bara i genomgången
+    };
+
+    const knappar = genomgang
+      ? '<button type="button" class="lank" data-tl="avsluta">Avsluta genomgången</button>'
+      : '<button type="button" class="lank" data-tl="timer">' + (tl.timerDold ? "Visa tid" : "Dölj tid") + "</button>"
+        + '<button type="button" class="lank" data-tl="formelblad" aria-expanded="' + tlFormelblad + '">Formelblad</button>'
+        + '<button type="button" class="lank" data-tl="lamna">Lämna in</button>'
+        + '<button type="button" class="lank" data-tl="avbryt">Avbryt</button>';
+
+    let fraga = "";
+    if (tlFraga === "avbryt") {
+      fraga = '<div class="tl-fraga" role="alert"><p>Avbryta tentan? Tiden och tentaläget försvinner. Statusen på uppgifterna ändras inte.</p>'
+        + '<p><button type="button" class="knapp" data-tl="avbryt-ok">Avbryt tentan</button>'
+        + '<button type="button" class="knapp" data-tl="fortsatt">Fortsätt skriva</button></p></div>';
+    } else if (tlFraga === "lamna") {
+      fraga = '<div class="tl-fraga" role="alert"><p>Lämna in? Därefter visas lösningarna och du går igenom uppgift för uppgift.</p>'
+        + '<p><button type="button" class="knapp" data-tl="lamna-ok">Lämna in</button>'
+        + '<button type="button" class="knapp" data-tl="fortsatt">Fortsätt skriva</button></p></div>';
+    }
+
+    const nrlista = tl.uppgifter.map((x, j) => {
+      const s = genomgang ? Status.get(x) : null;
+      return '<a href="' + href(j) + '" data-ersatt' + (j === i ? ' aria-current="page"' : "")
+        + (s ? ' class="har-status" title="' + Status.STATUSAR[s.status] + '"' : "") + ">" + B.uppgifter[x].nr + "</a>";
+    }).join("");
+
+    const losning = !genomgang ? ""
+      : '<section class="losning"><h2 class="del">Lösningsförslag</h2>'
+        + (u.losning === null ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>'
+          : '<div class="text">' + Format.formatera(u.losning, tenta.pdf[tenta.pdf.length - 1], id + " lösning") + "</div>")
+        + "</section>"
+        + '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
+        + '<div class="statusvalen">' + statusKnappar(id) + "</div></section>";
+
+    const nastaLank = i + 1 < tl.uppgifter.length
+      ? '<a href="' + href(i + 1) + '" data-ersatt>Nästa uppgift →</a>'
+      : genomgang ? '<button type="button" class="lank" data-tl="avsluta">Avsluta genomgången</button>' : "";
+
+    if (genomgang) {
+      setTimeout(() => app.querySelectorAll(".statusval").forEach((b) => b.addEventListener("click", () => valjStatus(id, b.dataset.status))));
+    }
+
+    return '<div class="tl-huvud"><span class="tl-namn">' + esc(tl.namn) + "</span>"
+      + '<span id="tl-timer" class="tl-timer" role="timer">' + tlTimerText() + "</span>"
+      + '<span class="tl-knappar">' + knappar + "</span></div>"
+      + fraga
+      + (tlFormelblad && !genomgang ? '<div class="tl-formelblad text"><h2 class="del">Formelblad</h2>'
+        + Format.formatera(B.profil.formelblad, null, "formelblad") + "</div>" : "")
+      + '<nav class="tl-nr" aria-label="Uppgifter">' + nrlista + "</nav>"
+      + '<article class="uppgift">'
+      + '<header class="uppgift-huvud"><h1>Uppgift ' + u.nr + "</h1>"
+      + '<p class="meta">' + u.poang + " p · " + (u.del === "G" ? "del för godkänt" : "del för högre betyg")
+      + (genomgang ? " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) : "") + "</p></header>"
+      + '<div class="text">' + Format.formatera(u.uppgift, tenta.pdf[0], id + " uppgift") + "</div>"
+      + losning
+      + '<nav class="nasta">' + (i > 0 ? '<a href="' + href(i - 1) + '" data-ersatt>← Föregående</a>' : "<span></span>") + nastaLank + "</nav>"
+      + "</article>";
+  }
+
+  function tlAvsluta() {
+    const tillbaka = tl.tillbaka;
+    tl = null;
+    tlFraga = null;
+    tlFormelblad = false;
+    sparaTL();
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* ignoreras */ }
+    ga(tillbaka, { ersatt: true });
+  }
+
+  document.addEventListener("click", (e) => {
+    const k = e.target.closest("[data-tl]");
+    if (!k) return;
+    const h = k.dataset.tl;
+    if (h === "starta") {
+      const upp = tlUpplagg(rutt().delar);
+      if (!upp) return;
+      tl = { ...upp, start: new Date().toISOString(), inlamnad: null, timerDold: false, aktuell: 1 };
+      sparaTL();
+      try { document.documentElement.requestFullscreen().catch(() => {}); } catch (e2) { /* ignoreras */ }
+      ga("#/tentalage/1", { ersatt: true });
+      return;
+    }
+    if (!tl) return;
+    if (h === "timer") { tl.timerDold = !tl.timerDold; sparaTL(); }
+    else if (h === "formelblad") tlFormelblad = !tlFormelblad;
+    else if (h === "avbryt" || h === "lamna") tlFraga = h;
+    else if (h === "fortsatt") tlFraga = null;
+    else if (h === "avbryt-ok") { tlAvsluta(); return; }
+    else if (h === "lamna-ok") {
+      tl.inlamnad = new Date().toISOString();
+      tlFraga = null;
+      tlFormelblad = false;
+      sparaTL();
+      ga("#/tentalage/1", { ersatt: true });
+      if (location.hash === "#/tentalage/1") rendera();
+      return;
+    } else if (h === "avsluta") { tlAvsluta(); return; }
+    rendera();
+  });
+
+  setInterval(() => {
+    const el = document.getElementById("tl-timer");
+    if (el && tl) el.textContent = tlTimerText();
+  }, 1000);
+  document.addEventListener("visibilitychange", () => {
+    const el = document.getElementById("tl-timer");
+    if (el && tl) el.textContent = tlTimerText();
+  });
 
   const SORTERING = [["ordning", "Ordning"], ["svagast", "Svagast först"]];
 
@@ -304,6 +491,7 @@
       + Status.antalGjorda(tenta.uppgifter) + "/" + tenta.uppgifter.length + " gjorda"
       + (tenta.harLosning ? "" : " · <strong>lösningsförslag saknas</strong>") + "</p>"
       + '<p class="kalla">' + pdfLankar(tenta) + "</p>"
+      + '<p><a class="knapp-stor" href="#/tentalage/ny/bank/' + tenta.id + '">Skriv som tenta</a></p>'
       + '<h2 class="del">Del för godkänt</h2><ul class="rader">' + g.map(rad).join("") + "</ul>"
       + '<h2 class="del">Del för högre betyg</h2><ul class="rader">' + vg.map(rad).join("") + "</ul>";
   }
@@ -391,6 +579,9 @@
     app.querySelectorAll(".statusval").forEach((b) => {
       b.setAttribute("aria-pressed", String(!!s && s.status === b.dataset.status));
     });
+    // I tentalägets genomgång: markera uppgiftsnumret.
+    const nr = app.querySelector('.tl-nr a[aria-current="page"]');
+    if (nr) nr.classList.toggle("har-status", !!s);
     renderaSidfot();
   }
 
@@ -415,8 +606,15 @@
 
     const [vy, a1, a2] = delar;
     tangentKontext = null;
+
+    // En pågående tenta går inte att lämna utan Avbryt eller Avsluta.
+    if (tl && (vy !== "tentalage" || a1 === "ny")) { ga("#/tentalage/" + (tl.aktuell || 1), { ersatt: true }); return; }
+    document.body.classList.toggle("tentalage", vy === "tentalage");
+
     let html, rullaTill = null;
-    if (vy === "idag" && delar.length === 1) html = vyIdag(null);
+    if (vy === "tentalage" && a1 === "ny" && tlUpplagg(delar)) html = vyTentaStart(tlUpplagg(delar));
+    else if (vy === "tentalage" && tl && delar.length <= 2) html = vyTentalage(a1);
+    else if (vy === "idag" && delar.length === 1) html = vyIdag(null);
     else if (vy === "idag" && a1 === "schema" && delar.length === 2) html = vySchema();
     else if (vy === "idag" && dagMap[a1] && delar.length === 2) html = vyIdag(a1);
     else if (vy === "idag" && dagMap[a1] && delar.length === 4 && dagMap[a1].pass
@@ -574,7 +772,7 @@
       const k = app.querySelector(".visa-losning");
       if (!k) return;
       k.click();
-    } else if (["1", "2", "3"].includes(e.key)) valjStatus(tangentKontext.uppgift, statusar[+e.key - 1]);
+    } else if (["1", "2", "3"].includes(e.key) && tangentKontext.uppgift) valjStatus(tangentKontext.uppgift, statusar[+e.key - 1]);
     else return;
     e.preventDefault();
   });

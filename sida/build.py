@@ -180,7 +180,15 @@ def validera_schema(schema, uppgifter, tentor):
     return fel
 
 
-def bygg_bank(tentor, uppgifter, mappning):
+def profilavsnitt(text, rubrik):
+    """Hämtar ett avsnitt ur examinatorprofilen ordagrant (utan rubrikraden)."""
+    rader = text.splitlines()
+    start = next(i for i, r in enumerate(rader) if r.startswith("## ") and rubrik in r)
+    slut = next(i for i in range(start + 1, len(rader)) if rader[i].startswith("## ") or rader[i].startswith("# "))
+    return "\n".join(rader[start + 1:slut]).strip()
+
+
+def bygg_bank(tentor, uppgifter, mappning, kalltext):
     tentor_ut = []
     for t in tentor:
         info = mappning["tentor"][t["id"]]
@@ -203,6 +211,11 @@ def bygg_bank(tentor, uppgifter, mappning):
         "uppgifter": {u["id"]: {k: u[k] for k in falt} for u in uppgifter},
         "typer": mappning["typer"],
         "avsnitt": mappning["avsnitt"],
+        # Ordagrant ur examinatorprofilen: visas vid start av tentaläget respektive under tentan.
+        "profil": {
+            "tentansForm": profilavsnitt(kalltext, "Tentans form"),
+            "formelblad": profilavsnitt(kalltext, "Formelbladet"),
+        },
     }
 
 
@@ -218,7 +231,8 @@ def skriv_tabell(uppgifter, mappning):
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     mappning = json.loads(MAPPNING.read_text(encoding="utf-8"))
-    tentor, uppgifter = parsa(KALLA.read_text(encoding="utf-8"))
+    kalltext = KALLA.read_text(encoding="utf-8")
+    tentor, uppgifter = parsa(kalltext)
     fel, utan_losning = validera(tentor, uppgifter, mappning)
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     fel += validera_schema(schema, uppgifter, tentor)
@@ -229,7 +243,7 @@ def main():
             print("  -", f)
         sys.exit(1)
 
-    bank = bygg_bank(tentor, uppgifter, mappning)
+    bank = bygg_bank(tentor, uppgifter, mappning, kalltext)
     UT.write_text("// Genererad av build.py. Redigera inte för hand.\nwindow.BANK = "
                   + json.dumps(bank, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
 
