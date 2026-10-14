@@ -1744,7 +1744,10 @@ window.BANK = {
   },
   "linjar-avbildning": {
    "namn": "Linjär avbildning",
-   "mall": "Standardmatris för $T$"
+   "mall": [
+    "Standardmatris för $T$",
+    "Sammansatta avbildningar"
+   ]
   },
   "spegling-projektion": {
    "namn": "Spegling och projektion",
@@ -1752,7 +1755,10 @@ window.BANK = {
   },
   "plan-avstand": {
    "namn": "Linjer, plan och avstånd",
-   "mall": "Avstånd punkt–plan / linje–plan / linje–linje"
+   "mall": [
+    "Plan genom tre punkter",
+    "Avstånd punkt–plan / linje–plan / linje–linje"
+   ]
   },
   "bas-dimension": {
    "namn": "Linjärt oberoende, bas, koordinater",
@@ -1760,7 +1766,10 @@ window.BANK = {
   },
   "nollrum-kolonnrum": {
    "namn": "Kolonnrum, nollrum, rang",
-   "mall": "Bas för $\\operatorname{col}(A)$ / $\\operatorname{span}$"
+   "mall": [
+    "Bas för $\\operatorname{col}(A)$ / $\\operatorname{span}$",
+    "Bas för $\\operatorname{null}(A)$"
+   ]
   },
   "underrum": {
    "namn": "Underrum",
@@ -1834,6 +1843,119 @@ window.BANK = {
  },
  "profil": {
   "tentansForm": "- 9 uppgifter à 4 p. Uppgift 1–6 är **Del för godkänt** (GP) och uppgift 7–9 är **Del för högre betyg** (XP).\n- Betyg 3: $GP\\ge12$. Betyg 4: $GP\\ge12$ och $XP\\ge4$. Betyg 5: $GP\\ge12$ och $XP\\ge8$. Om $GP\\ge18$ får man en extra XP-poäng. Bonuspoäng (från diagnostiska test) läggs till GP.\n- Skrivtid 5 h. Inga hjälpmedel utöver skrivverktyg och linjal. Ett formelblad följer med tentan (se §6).\n- Instruktionen på varje tenta, ordagrant: *\"Till alla uppgifter ska fullständiga lösningar lämnas. Resonemang, införda beteckningar och uträkningar får inte vara så knapphändigt redovisade att de blir svåra att följa. Lösningarna ska vara systematiska och följa metoderna som behandlats i kursen.\"*\n- Övriga anvisningar: en uppgift per lösningsblad, skriv inte på baksidan, ingen rödpenna.",
-  "formelblad": "1. $A=\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}\\Rightarrow A^{-1}=\\frac1{ad-bc}\\begin{bmatrix}d&-b\\\\-c&a\\end{bmatrix}$\n2. Rotationsmatris $\\alpha$ radianer moturs: $\\begin{bmatrix}\\cos\\alpha&-\\sin\\alpha\\\\\\sin\\alpha&\\cos\\alpha\\end{bmatrix}$\n3. $\\mathbf u\\bullet\\mathbf v=u_1v_1+u_2v_2+u_3v_3$; $\\mathbf u\\times\\mathbf v=(u_2v_3-v_2u_3,\\ v_1u_3-u_1v_3,\\ u_1v_2-v_1u_2)$; $\\operatorname{proj}_{\\mathbf v}\\mathbf u=\\frac{\\mathbf u\\bullet\\mathbf v}{\\|\\mathbf v\\|^2}\\mathbf v$; $\\mathbf u\\times(\\mathbf v\\times\\mathbf w)=(\\mathbf u\\bullet\\mathbf w)\\mathbf v-(\\mathbf u\\bullet\\mathbf v)\\mathbf w$; $\\begin{vmatrix}u_1&u_2&u_3\\\\v_1&v_2&v_3\\\\w_1&w_2&w_3\\end{vmatrix}=\\mathbf u\\bullet(\\mathbf v\\times\\mathbf w)$\n4. $P=P_{\\mathcal B\\to\\mathcal C}=[[\\mathbf u_1]_{\\mathcal C}\\dots[\\mathbf u_n]_{\\mathcal C}]$, $[\\mathbf x]_{\\mathcal C}=P[\\mathbf x]_{\\mathcal B}$\n5. $\\{\\mathbf v_1,\\dots,\\mathbf v_p\\}$ ortogonal bas för $V$: $\\operatorname{proj}_V\\mathbf u=\\sum_{j=1}^p\\frac{\\langle\\mathbf u,\\mathbf v_j\\rangle}{\\|\\mathbf v_j\\|^2}\\mathbf v_j$"
- }
+  "formelblad": "1. $A=\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}\\Rightarrow A^{-1}=\\frac1{ad-bc}\\begin{bmatrix}d&-b\\\\-c&a\\end{bmatrix}$\n2. Rotationsmatris $\\alpha$ radianer moturs: $\\begin{bmatrix}\\cos\\alpha&-\\sin\\alpha\\\\\\sin\\alpha&\\cos\\alpha\\end{bmatrix}$\n3. $\\mathbf u\\bullet\\mathbf v=u_1v_1+u_2v_2+u_3v_3$; $\\mathbf u\\times\\mathbf v=(u_2v_3-v_2u_3,\\ v_1u_3-u_1v_3,\\ u_1v_2-v_1u_2)$; $\\operatorname{proj}_{\\mathbf v}\\mathbf u=\\frac{\\mathbf u\\bullet\\mathbf v}{\\|\\mathbf v\\|^2}\\mathbf v$; $\\mathbf u\\times(\\mathbf v\\times\\mathbf w)=(\\mathbf u\\bullet\\mathbf w)\\mathbf v-(\\mathbf u\\bullet\\mathbf v)\\mathbf w$; $\\begin{vmatrix}u_1&u_2&u_3\\\\v_1&v_2&v_3\\\\w_1&w_2&w_3\\end{vmatrix}=\\mathbf u\\bullet(\\mathbf v\\times\\mathbf w)$\n4. $P=P_{\\mathcal B\\to\\mathcal C}=[[\\mathbf u_1]_{\\mathcal C}\\dots[\\mathbf u_n]_{\\mathcal C}]$, $[\\mathbf x]_{\\mathcal C}=P[\\mathbf x]_{\\mathcal B}$\n5. $\\{\\mathbf v_1,\\dots,\\mathbf v_p\\}$ ortogonal bas för $V$: $\\operatorname{proj}_V\\mathbf u=\\sum_{j=1}^p\\frac{\\langle\\mathbf u,\\mathbf v_j\\rangle}{\\|\\mathbf v_j\\|^2}\\mathbf v_j$",
+  "mallar": {
+   "Lösbarhet av $A\\mathbf x=\\mathbf b$": "sätt $\\mathbf b=(b_1,\\dots)$ och gausseliminera med $\\mathbf b$ i högerledet. En nollrad i vänsterledet ger villkoret \"högerledet $=0$\". Svaret är ekvationen, t.ex. $4b_1+b_2-2b_3=0$.",
+   "System med parameter $a$ (kvadratisk matris)": "beräkna $\\det A$ som polynom i $a$. Precis en lösning omm $\\det A\\neq0$. Behandla sedan *varje* rot separat med elimination och avgör \"ingen lösning\" (rad $[0\\cdots0\\mid c\\neq0]$) eller \"oändligt många\" (ge lösningen på parameterform).",
+   "Matrisekvation": "lös ut $X$ algebraiskt först (faktorisera $X$ till vänster eller höger, var noga med ordningen), t.ex. $(A+B^T+2I)X=A\\iff X=(A+B^T+2I)^{-1}A$. Beräkna sedan.",
+   "Standardmatris för $T$": "$A=[T(\\mathbf e_1)\\ T(\\mathbf e_2)\\ \\dots]$. Om $T$ är given på andra vektorer, skriv $\\mathbf e_j$ (eller den efterfrågade vektorn) som en linjärkombination av dem och utnyttja linjäriteten. \"Vad avbildas på $\\mathbf y$\" löses som $A\\mathbf x=\\mathbf y$; säg uttryckligen \"saknar lösning, alltså avbildas inget på …\" om det inte går.",
+   "Sammansatta avbildningar": "\"först $R$, sedan $S$\" ger $S\\circ R$, med matris $SR$. Rotationsmatrisen finns på formelbladet. Speglingsmatriser tas ur figur ($S(\\mathbf e_1)$, $S(\\mathbf e_2)$). Inversen till en sammansättning är $(SR)^{-1}=R^{-1}S^{-1}$.",
+   "Spegling/projektion i linje eller plan": "projicera på riktningen (eller normalen). Spegling: $S(\\mathbf x)=2\\operatorname{proj}_{\\mathbf d}\\mathbf x-\\mathbf x$, eller $\\mathbf x-2\\operatorname{proj}_{\\mathbf n}\\mathbf x$. Projektion på plan: $\\mathbf x-\\operatorname{proj}_{\\mathbf n}\\mathbf x$, utskrivet till en matris.",
+   "Plan genom tre punkter": "$\\mathbf n=\\overrightarrow{AB}\\times\\overrightarrow{AC}$, punkt–normalform $n_1(x-x_0)+\\dots=0$, förenkla, och gör sedan koll med alla tre punkterna.",
+   "Avstånd punkt–plan / linje–plan / linje–linje": "ta en vektor från en punkt i planet (eller på ena linjen) till punkten, projicera den på normalen, och avståndet är längden av projektionen. Visa först parallellitet ($\\mathbf v\\bullet\\mathbf n=0$) eller att skärning saknas (inkonsistent system). Parallella linjer: avståndet fås med Pythagoras, $a^2=\\|\\mathbf v\\|^2-\\|\\operatorname{proj}\\|^2$.",
+   "Linjärt oberoende": "\"Antag $c_1\\mathbf v_1+\\dots=\\mathbf 0$ och visa $c_1=\\dots=0$\". För polynom identifieras koefficienterna för $x^0,x^1,x^2$. Med parameter: L.O. omm $\\det\\neq0$. Bas följer sedan ur bassatsen (\"tre L.O. element i ett tredimensionellt rum\").",
+   "Bas för $\\operatorname{col}(A)$ / $\\operatorname{span}$": "lägg vektorerna som kolonner, radreducera, och ta pivotkolonnerna **i ursprungsmatrisen** som bas. Utöka till en bas för $\\mathbb R^n$ genom att välja ett $\\mathbf b$ som gör $A\\mathbf x=\\mathbf b$ olösbart.",
+   "Bas för $\\operatorname{null}(A)$": "lös $A\\mathbf x=\\mathbf 0$, sätt de fria variablerna till $s,t,u$ och dela upp lösningen i en vektor per parameter. Vektorerna \"spänner upp och är uppenbart L.O.\".",
+   "Diagonalisering": "1. Ta egenvärden ur $\\det(\\lambda I-A)=0$. För $3\\times3$: gör rad-/kolumnoperationer för att bryta ut en faktor $(\\lambda-c)$ innan du utvecklar. Koll med spår och determinant.\n2. För varje $\\lambda$: radreducera $(\\lambda I-A)\\mathbf v=\\mathbf 0$, ange bundna och fria variabler och välj snygga egenvektorer.\n3. Vid dubbelrot: konstatera \"två fria variabler, så det går att diagonalisera\".\n4. Svaret: $A=PDP^{-1}$ med $P$ och $D$ explicit och kolonnerna i samma ordning.\n5. Potens: $A^n=PD^nP^{-1}$, med $P^{-1}$ ur $2\\times2$-formeln.",
+   "Differentialekvationssystem": "skriv på matrisform $\\mathbf y'=A\\mathbf y$. Gör variabelbytet $\\mathbf y=P\\mathbf u$, vilket ger $P\\mathbf u'=AP\\mathbf u$, alltså $\\mathbf u'=D\\mathbf u$. Lös $u_i=c_ie^{\\lambda_ix}$, sätt tillbaka $\\mathbf y=P\\mathbf u$ och bestäm konstanterna ur begynnelsevillkoren. Rama in svaret för $y$ och $z$.",
+   "Minsta kvadrat": "sätt in datapunkterna i modellen. Konstatera \"systemet är inkonsistent\". Skriv $A\\begin{bmatrix}\\alpha\\\\\\beta\\end{bmatrix}=\\mathbf b$, lös normalekvationen $A^TA\\hat{\\mathbf x}=A^T\\mathbf b$, ange funktionen och rita gärna datapunkterna med kurvan.",
+   "Gram–Schmidt": "$\\mathbf v_1=\\mathbf u_1$, $W_1=\\operatorname{span}\\{\\mathbf v_1\\}$, $\\mathbf v_2=\\mathbf u_2-\\operatorname{proj}_{W_1}\\mathbf u_2$, skala, $W_2=\\dots$ och så vidare. Projektionen skrivs ut med formeln $\\frac{\\langle\\mathbf u,\\mathbf v\\rangle}{\\langle\\mathbf v,\\mathbf v\\rangle}\\mathbf v$. Anmärkning som examinatorn själv gör: om vektorerna inte är L.O. syns det genom att någon $\\mathbf v_k$ blir $\\mathbf 0$.",
+   "Projektion/bästa approximation i funktionsrum": "formulera om problemet till \"$\\operatorname{proj}_W f$\". Ett minimeringsproblem $\\int(\\dots)^2$ ska känns igen som $\\|f-p\\|^2$. Ortogonalisera basen för $W$ och samla skalärprodukterna separat under rubriken \"Några skalärprodukter\". Använd att en udda integrand ger 0 på $[-1,1]$. Ange svaret som polynom.",
+   "Underrum (bevis)": "tre punkter: (1) $\\mathbf 0\\in H$, (2) $C,D\\in H\\Rightarrow C+D\\in H$, (3) $C\\in H\\Rightarrow\\alpha C\\in H$, med motivering i varje steg. Bas: skriv ett allmänt element, översätt villkoret till ekvationer, lös och dela upp efter fria parametrar.",
+   "Determinantlagar": "använd linjäritet i varje kolumn, teckenbyte vid byte av kolumner, att linjärt beroende kolumner ger 0 och att $\\det(cA)=c^n\\det A$. Skriv ut varje steg. För \"lös $A\\mathbf x=\\mathbf b_1-\\mathbf b_2$\": skriv högerledet som en kombination av $\\mathbf a_1,\\mathbf a_2$ och läs av $\\mathbf x$. Unikheten följer av $\\det A\\neq0$.",
+   "Bevis allmänt": "\"Antag … och visa …\". Använd definitionen (skriv ut den när det efterfrågas, t.ex. \"$\\mathbf v\\neq\\mathbf 0$ och $A\\mathbf v=\\lambda\\mathbf v$\"). Typiska knep: multiplicera med $A$ och subtrahera $\\lambda_1\\cdot(1)$; ta skalärprodukten med $\\mathbf u_j$; $\\operatorname{col}(AB)\\subseteq\\operatorname{col}(A)$; $\\operatorname{rank}A=\\operatorname{rank}A^T$; dimensionssatsen $\\operatorname{rank}A+\\dim\\operatorname{null}A=n$. Ett motexempel eller en kommentar om \"åtminstone\" uppskattas."
+  }
+ },
+ "strategi": [
+  {
+   "nr": 1,
+   "titel": "Fokuserat vs diffust läge",
+   "kort": "Hjärnan jobbar i två lägen och du behöver båda.",
+   "text": "- **Fokuserat läge**: koncentrerat räknande. Här lär du dig steg och metoder du redan har en känsla för.\n- **Diffust läge**: avslappnat, t.ex. promenad, dusch eller sömn. Här kopplar hjärnan ihop saker och hittar nya angreppssätt.\n- Har du kört fast i ~15–20 min hjälper det sällan att stirra vidare. Byt uppgift eller ta en paus och kom tillbaka.\n- Diffusa läget jobbar bara på det du först har tryckt in i fokuserat läge. Paus utan förarbete ger ingenting."
+  },
+  {
+   "nr": 2,
+   "titel": "Sömn är en del av pluggandet",
+   "kort": "Det du pluggat befästs medan du sover.",
+   "text": "- Sömnbrist gör det svårare att tänka flexibelt och att plocka fram det du kan.\n- Inget nattplugg kvällen innan tentan.\n- En dålig natt precis innan avgör inte tentan, så stressa inte över det. Det som räknas är sömnen under veckorna innan.\n- Fysisk aktivitet hjälper också inlärningen."
+  },
+  {
+   "nr": 3,
+   "titel": "Illusioner av kompetens",
+   "kort": "Det som *känns* som inlärning är ofta inte det.",
+   "text": "Fällor:\n- Läsa om anteckningar eller boken.\n- Stryka under och markera.\n- Kolla på en lösning och tänka \"ja, det fattar jag\".\n- Räkna uppgifter du redan kan för att det känns bra.\n\nTecken på att du faktiskt kan något: du kan lösa uppgiften **från noll utan att titta** och förklara varför varje steg görs."
+  },
+  {
+   "nr": 4,
+   "titel": "Retrieval practice – testa dig själv",
+   "kort": "Att plocka fram kunskap ur minnet är den mest effektiva studietekniken.",
+   "text": "- Täck över lösningen och räkna själv.\n- Efter ett pass: titta bort och försök återge huvudstegen ur minnet (t.ex. \"hur diagonaliserar jag en matris?\").\n- Gamla tentor är perfekta för det här. Räkna dem som om det vore på riktigt *innan* du tittar på lösningsförslaget.\n- Det ska kännas jobbigt. Jobbigt betyder att det fastnar."
+  },
+  {
+   "nr": 5,
+   "titel": "Chunking – bygg färdiga paket",
+   "kort": "Målet är att en lösningsmetod ska sitta som en enda enhet du kan plocka fram direkt.",
+   "text": "En chunk byggs i tre steg:\n1. **Fokus**: lägg full uppmärksamhet på ett exempel.\n2. **Förståelse**: fatta varför stegen görs, inte bara vilka de är.\n3. **Övning + kontext**: räkna den själv flera gånger och lär dig *när* metoden ska användas.\n\nTips: räkna samma svåra uppgift om och om igen, några dagar isär, tills lösningen \"spelas upp\" i huvudet utan att du behöver tänka i varje steg.\n\n> Exempel på chunks i linjär algebra: Gausseliminering till trappform, invers via $[A \\mid I]$, $\\det(A)$ via radoperationer, egenvärden via $\\det(A - \\lambda I) = 0$, kontroll av linjärt beroende."
+  },
+  {
+   "nr": 6,
+   "titel": "Interleaving – blanda uppgiftstyper",
+   "kort": "Räkna inte 15 uppgifter av samma typ i rad.",
+   "text": "- På tentan står det inte vilket kapitel en uppgift hör till. Den svåra färdigheten är att **känna igen vilken metod** som ska användas.\n- Blanda olika typer i samma pass, t.ex. en determinant, en baskontroll, en egenvärdesuppgift och ett ekvationssystem.\n- Det känns långsammare och rörigare än att köra en typ i taget, men det ger mer på tentan."
+  },
+  {
+   "nr": 7,
+   "titel": "Spaced repetition – sprid ut det",
+   "kort": "Lite varje dag slår mycket en dag.",
+   "text": "- Ta samma ämne flera gånger med några dagars mellanrum i stället för ett långt pass.\n- Att plugga allt sista dagarna bygger kunskap som lätt rasar ihop, särskilt under tentastress.\n- Gå tillbaka till gamla uppgifter du klarat för några dagar sedan. Sitter de fortfarande?"
+  },
+  {
+   "nr": 8,
+   "titel": "Deliberate practice – lägg tiden på det svåra",
+   "kort": "Det bekväma ger nästan ingenting.",
+   "text": "- Leta upp de uppgiftstyper du undviker och lägg passen där.\n- För en lista över \"det här kan jag inte än\" och beta av den."
+  },
+  {
+   "nr": 9,
+   "titel": "Einstellung – när första idén blockerar",
+   "kort": "Den första metoden du tänker på kan stå i vägen för den rätta.",
+   "text": "- Om ett angreppssätt inte leder någonstans, släpp det helt i stället för att trixa vidare.\n- Ännu ett skäl att ta paus eller byta uppgift när du kör fast."
+  },
+  {
+   "nr": 10,
+   "titel": "Prokrastinering – Pomodoro och process",
+   "kort": "Fokusera på processen, inte på resultatet.",
+   "text": "- **Pomodoro:** 25 min fokuserat utan mobil, sedan 5 min paus. Upprepa.\n- Säg \"nu pluggar jag 25 minuter\", inte \"nu måste jag fatta kapitel 5\".\n- Obehaget inför att börja försvinner oftast efter några minuter. Det jobbiga är startsträckan.\n- Skriv kvällen innan en kort lista för nästa dag.\n- Bestäm en tid när du slutar plugga för dagen. Fritiden är en del av planen.\n- Gör pluggandet till en vana med samma plats, samma tid och samma startritual."
+  },
+  {
+   "nr": 11,
+   "titel": "Checklista inför tentan",
+   "kort": "Kan du svara ja på det här är du redo. (Fritt efter Richard Felders checklista i boken.)",
+   "text": "- [ ] Har jag räknat gamla tentor/uppgifter själv och förstått **alla** lösningar, inte bara läst dem?\n- [ ] Har jag frågat lärare eller assistenter om det jag inte förstod?\n- [ ] Har jag snabbt skissat lösningsgången för många olika uppgifter?\n- [ ] Har jag förhört mig själv, gärna tillsammans med någon annan?\n- [ ] Har jag gått igenom eventuell studieguide eller repetitionsmaterial?\n- [ ] Har jag varit på repetitionstillfället, om det fanns ett?\n- [ ] Sover jag ordentligt de sista nätterna?"
+  },
+  {
+   "nr": 12,
+   "titel": "På tentan: hard start, jump to easy",
+   "kort": "Börja svårt, hoppa till lätt när du kör fast.",
+   "text": "1. Bläddra igenom hela tentan först.\n2. Börja på en **svår** uppgift.\n3. Kör du fast efter 1–2 minuter, hoppa till en lätt och plocka poäng där.\n4. Gå tillbaka till den svåra senare. Diffusa läget har jobbat på den i bakgrunden.\n\nVarför: börjar man med det lätta och sparar det svåra till sist får hjärnan ingen bakgrundstid på det svåra."
+  },
+  {
+   "nr": 13,
+   "titel": "På tentan: hantera stress",
+   "kort": "Nervositet och att vara taggad är samma kroppsreaktion.",
+   "text": "- Tolka hjärtklappningen som \"jag är laddad\" i stället för \"jag är rädd\".\n- Ta några djupa andetag med magen innan du börjar, och när du märker att stressen stiger.\n- Ha en plan B i bakhuvudet, t.ex. omtenta eller att det finns andra vägar. Det minskar trycket och gör att du presterar bättre."
+  },
+  {
+   "nr": 14,
+   "titel": "På tentan: kontrollera svaren",
+   "kort": "Byt perspektiv när du kollar. Hjärnan ser det den tror står där.",
+   "text": "- Titta upp och blinka, och läs sedan uppgiften igen som om den vore ny.\n- Fråga dig om svaret är rimligt.\n- I linjär algebra går nästan allt att kontrollera:\n  - Ekvationssystem: sätt in lösningen i de *ursprungliga* ekvationerna.\n  - Parameterlösningar: testa några värden, t.ex. $t = 0$ och $t = 1$.\n  - Invers: kolla att $AA^{-1} = I$.\n  - Egenvektor: kolla att $A\\mathbf{v} = \\lambda\\mathbf{v}$.\n- Teckenfel är den vanligaste fällan, så det är där kontrollen lönar sig mest."
+  },
+  {
+   "nr": 15,
+   "titel": "Sista dagen",
+   "kort": "Lätt repetition, ingen panik.",
+   "text": "- Gå lätt igenom dina chunks, men lär dig inget nytt stort.\n- Packa det du behöver kvällen innan.\n- Sov."
+  }
+ ]
 };

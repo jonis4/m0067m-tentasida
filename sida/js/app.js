@@ -39,6 +39,31 @@
   const idagIso = () => window.IDAG_DATUM || isoAv(new Date());
   const forstaDag = S.dagar[0].datum;
 
+  // ---------- Strategirader (layoutspec §7) och metodmallar ----------
+  const INST_NYCKEL = "m0067m.installningar.v1";
+  let inst = { strategi: true };
+  try { inst = Object.assign(inst, JSON.parse(localStorage.getItem(INST_NYCKEL)) || {}); } catch (e) { /* standard */ }
+  function sparaInst() { try { localStorage.setItem(INST_NYCKEL, JSON.stringify(inst)); } catch (e) { /* ignoreras */ } }
+
+  const utanP = (html) => html.replace(/^<p>/, "").replace(/<\/p>$/, "");
+
+  // En diskret rad som går att klicka upp till hela blocket. Tom om strategiraderna är avstängda.
+  function strategiRad(nr) {
+    if (!inst.strategi) return "";
+    const b = B.strategi[nr - 1];
+    return '<details class="strategi"><summary><span class="strategi-titel">' + esc(b.titel) + ".</span> "
+      + utanP(Format.formatera(b.kort, null, "strategi " + nr)) + "</summary>"
+      + '<div class="text">' + Format.formatera(b.text, null, "strategi " + nr) + "</div></details>";
+  }
+
+  // "Så vill examinatorn ha det": metodmallen för uppgiftens typ, hopfälld.
+  function mallHtml(u) {
+    const mallar = [].concat(B.typer[u.typ].mall);
+    return '<details class="mall"><summary>Så vill examinatorn ha det</summary><div class="text">'
+      + mallar.map((m) => Format.formatera("**" + m + ":**\n" + B.profil.mallar[m], null, "mall " + m)).join("")
+      + "</div></details>";
+  }
+
   function passBeskrivning(ps) {
     if (ps.beskrivning) return ps.beskrivning;
     const typer = [...new Set(ps.uppgifter.map((id) => B.typer[B.uppgifter[id].typ].namn.toLowerCase()))];
@@ -141,13 +166,18 @@
         + (dagMap[idag] ? ' <a href="#/idag" data-ersatt>Till idag</a>' : "") + "</p>";
     }
 
+    if (visad === plusDagar(S.tentadatum, -1)) html += '<div class="strategier">' + strategiRad(15) + strategiRad(2) + "</div>";
+
     if (!dag) {
       html += '<p class="tyst">Inget inlagt den här dagen.</p>';
     } else if (dag.notis) {
       html += '<p class="notis">' + esc(dag.notis) + "</p>";
     } else {
+      let interleavingVisad = false;
       dag.pass.forEach((ps, i) => {
         const nr = i + 1;
+        const blandat = !ps.beskrivning && ps.uppgifter.length > 1 && !interleavingVisad;
+        if (blandat) interleavingVisad = true;
         const rader = ps.uppgifter.map((id) => {
           const u = B.uppgifter[id];
           return '<li><a href="#/idag/' + visad + "/" + nr + "/" + id + '">'
@@ -163,12 +193,79 @@
           : forsta ? '<p><a class="knapp-stor" href="#/idag/' + visad + "/" + nr + "/" + forsta + '">Starta</a></p>' : "";
         html += '<section class="pass"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
           + '<p class="pass-beskrivning">' + esc(passBeskrivning(ps)) + "</p>"
+          + (blandat ? strategiRad(6) : "")
           + (rader && !ps.tenta ? '<ul class="rader">' + rader + "</ul>" : "")
           + knapp
           + "</section>";
       });
     }
+    if (visad === idag) html += repeteraSektion(dag);
     return html + '<p class="hela-schemat"><a href="#/idag/schema">Visa hela schemat</a></p>';
+  }
+
+  // ---------- Repetera (spridd repetition) ----------
+  // Gjord med hjälp (tidigast dagen efter) eller gjord själv för minst tre dagar sedan.
+  // Genereras automatiskt och står inte i schemat. Uppgifter i dagens pass tas inte med.
+  let repeteraFrys = [];
+
+  function repeteraLista(dag) {
+    const idag = idagIso();
+    const iDagensPass = new Set(dag && dag.pass ? dag.pass.flatMap((ps) => ps.uppgifter) : []);
+    return Object.keys(B.uppgifter)
+      .map((id) => ({ id, s: Status.get(id) }))
+      .filter(({ id, s }) => {
+        if (!s || iDagensPass.has(id)) return false;
+        const sedan = dagarMellan(isoAv(new Date(s.tid)), idag);
+        return (s.status === "hjalp" && sedan >= 1) || (s.status === "sjalv" && sedan >= 3);
+      })
+      .sort((a, b) => (a.s.status === "hjalp" ? 0 : 1) - (b.s.status === "hjalp" ? 0 : 1) || Date.parse(a.s.tid) - Date.parse(b.s.tid))
+      .map(({ id }) => id);
+  }
+
+  function repeteraSektion(dag) {
+    repeteraFrys = repeteraLista(dag);
+    const idag = idagIso();
+    let html = '<section class="pass repetera"><h2 class="del">Repetera</h2>';
+    if (!repeteraFrys.length) {
+      return html + '<p class="tyst">Inget att repetera än. Här hamnar uppgifter du gjort med hjälp, '
+        + "eller gjort själv för minst tre dagar sedan.</p></section>";
+    }
+    const rader = repeteraFrys.map((id) => {
+      const u = B.uppgifter[id], s = Status.get(id);
+      const sedan = dagarMellan(isoAv(new Date(s.tid)), idag);
+      return '<li><a href="#/idag/repetera/' + id + '">'
+        + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
+        + '<span class="rad-status">' + Status.STATUSAR[s.status] + ' <span class="tyst">för ' + sedan + (sedan === 1 ? " dag" : " dagar") + " sedan</span></span>"
+        + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
+        + '<span class="pil" aria-hidden="true">→</span></a></li>';
+    }).join("");
+    return html + '<p class="pass-beskrivning">Sitter de fortfarande? Räkna dem från noll utan att titta.</p>'
+      + strategiRad(7)
+      + '<ul class="rader">' + rader + "</ul>"
+      + '<p><a class="knapp-stor" href="#/idag/repetera/' + repeteraFrys[0] + '">Starta</a></p></section>';
+  }
+
+  function repeteraKontext(id) {
+    return {
+      ids: repeteraFrys.includes(id) ? repeteraFrys : [id],
+      href: (x) => "#/idag/repetera/" + x,
+      foralder: "#/idag",
+      foralderNamn: "Repetera",
+      sistaText: "Tillbaka till Idag",
+      visaKalla: true,
+    };
+  }
+
+  // ---------- Alla strategiblock (länkas från sidfoten) ----------
+  function vyStrategi() {
+    document.title = "Strategi · M0067M";
+    return kontextrad("#/idag", "") + "<h1>Strategi</h1>"
+      + '<p class="tyst">Femton block ur <em>A Mind for Numbers</em> (Barbara Oakley), sammanfattade för de sista veckorna före tentan. '
+      + "Strategiraderna i sidan är " + (inst.strategi ? "på" : "av") + '. <button type="button" class="lank" data-sidfot="strategi-vaxla">'
+      + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p>"
+      + B.strategi.map((b) => '<section class="strategiblock" id="strategi-' + b.nr + '"><h2>' + b.nr + ". " + esc(b.titel) + "</h2>"
+        + '<p class="strategi-kort">' + utanP(Format.formatera(b.kort, null, "strategi " + b.nr)) + "</p>"
+        + '<div class="text">' + Format.formatera(b.text, null, "strategi " + b.nr) + "</div></section>").join("");
   }
 
   function vySchema() {
@@ -255,6 +352,7 @@
       + '<div class="text tl-form">' + Format.formatera(B.profil.tentansForm, null, "profil tentans form") + "</div>"
       + '<p class="tyst">I tentaläget syns ingen navigering, inga lösningar och inga statusval. Formelbladet finns. '
       + "Timern går även om du byter flik, och du kan dölja den.</p>"
+      + strategiRad(12)
       + '<p><button type="button" class="knapp-stor" data-tl="starta">Starta tentan</button></p>';
   }
 
@@ -299,6 +397,7 @@
         + '<button type="button" class="knapp" data-tl="fortsatt">Fortsätt skriva</button></p></div>';
     } else if (tlFraga === "lamna") {
       fraga = '<div class="tl-fraga" role="alert"><p>Lämna in? Därefter visas lösningarna och du går igenom uppgift för uppgift.</p>'
+        + strategiRad(14)
         + '<p><button type="button" class="knapp" data-tl="lamna-ok">Lämna in</button>'
         + '<button type="button" class="knapp" data-tl="fortsatt">Fortsätt skriva</button></p></div>';
     }
@@ -313,6 +412,7 @@
       : '<section class="losning"><h2 class="del">Lösningsförslag</h2>'
         + (u.losning === null ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>'
           : '<div class="text">' + Format.formatera(u.losning, tenta.pdf[tenta.pdf.length - 1], id + " lösning") + "</div>")
+        + mallHtml(u)
         + "</section>"
         + '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
         + '<div class="statusvalen">' + statusKnappar(id) + "</div></section>";
@@ -509,9 +609,9 @@
     tangentKontext = { forra, nasta, uppgift: u.id };
 
     const losning = u.losning === null
-      ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>'
+      ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>' + mallHtml(u)
       : '<button type="button" class="visa-losning" aria-expanded="false" aria-controls="losning">Visa lösningsförslag</button>'
-        + '<div id="losning" class="losningstext text" hidden></div>';
+        + '<div id="losning" class="losningstext" hidden></div>';
 
     const nastaLank = nasta
       ? '<a href="' + nasta + '" data-ersatt>Nästa uppgift →</a>'
@@ -539,7 +639,11 @@
       const ruta = app.querySelector("#losning");
       knapp.addEventListener("click", () => {
         const visas = knapp.getAttribute("aria-expanded") === "true";
-        if (!visas && !ruta.innerHTML) ruta.innerHTML = Format.formatera(u.losning, figurPdfLosning, kalla + " lösning");
+        if (!visas && !ruta.innerHTML) {
+          ruta.innerHTML = strategiRad(3)
+            + '<div class="text">' + Format.formatera(u.losning, figurPdfLosning, kalla + " lösning") + "</div>"
+            + mallHtml(u);
+        }
         ruta.hidden = visas;
         knapp.setAttribute("aria-expanded", String(!visas));
         knapp.textContent = visas ? "Visa lösningsförslag" : "Dölj lösningsförslag";
@@ -616,6 +720,8 @@
     else if (vy === "tentalage" && tl && delar.length <= 2) html = vyTentalage(a1);
     else if (vy === "idag" && delar.length === 1) html = vyIdag(null);
     else if (vy === "idag" && a1 === "schema" && delar.length === 2) html = vySchema();
+    else if (vy === "idag" && a1 === "repetera" && B.uppgifter[a2] && delar.length === 3) html = vyUppgift(B.uppgifter[a2], repeteraKontext(a2));
+    else if (vy === "strategi" && delar.length === 1) html = vyStrategi();
     else if (vy === "idag" && dagMap[a1] && delar.length === 2) html = vyIdag(a1);
     else if (vy === "idag" && dagMap[a1] && delar.length === 4 && dagMap[a1].pass
       && dagMap[a1].pass[+a2 - 1] && dagMap[a1].pass[+a2 - 1].uppgifter.includes(delar[3])) {
@@ -676,7 +782,9 @@
         + '<button type="button" class="lank" data-sidfot="exportera">Exportera</button> · '
         + '<button type="button" class="lank" data-sidfot="importera">Importera</button> · '
         + '<button type="button" class="lank" data-sidfot="rensa">Rensa</button></p>'
-        + sparfilRad();
+        + sparfilRad()
+        + '<p><a href="#/strategi">Strategi</a> · Strategirader ' + (inst.strategi ? "på" : "av")
+        + ' · <button type="button" class="lank" data-sidfot="strategi-vaxla">' + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p>";
     }
     sidfot.innerHTML = html;
   }
@@ -729,13 +837,14 @@
     });
   });
 
-  sidfot.addEventListener("click", (e) => {
+  document.addEventListener("click", (e) => {
     const k = e.target.closest("[data-sidfot]");
     if (!k) return;
     const handling = k.dataset.sidfot;
     if (handling === "exportera") { exportera(); return; }
     if (handling === "importera") { filval.click(); return; }
     if (handling === "sparfil-valj") { Sparfil.valj(); return; }
+    if (handling === "strategi-vaxla") { inst.strategi = !inst.strategi; sparaInst(); rendera(); return; }
     if (handling === "sparfil-ateranslut") { Sparfil.ateranslut(); return; }
     if (handling === "sparfil-sluta") { Sparfil.sluta(); return; }
     if (handling === "angra") {

@@ -15,6 +15,7 @@ from pathlib import Path
 SIDA = Path(__file__).resolve().parent
 ROT = SIDA.parent
 KALLA = ROT / "AI" / "M0067M_kunskapsbas.md"
+STRATEGI = ROT / "AI" / "mind-for-numbers-tentastrategi.md"
 MAPPNING = SIDA / "data" / "mappning.json"
 UT = SIDA / "data" / "bank.js"
 SCHEMA = SIDA / "data" / "schema.json"
@@ -188,7 +189,35 @@ def profilavsnitt(text, rubrik):
     return "\n".join(rader[start + 1:slut]).strip()
 
 
-def bygg_bank(tentor, uppgifter, mappning, kalltext):
+MALL_RE = re.compile(r"^\*\*(.+?):\*\*\s*(.*)$")
+
+
+def metodmallar(text):
+    """Metodmallarna i profilens §4, ordagrant: {rubrik: text}."""
+    mallar, aktuell = {}, None
+    for rad in profilavsnitt(text, "Metodmallar").splitlines():
+        if m := MALL_RE.match(rad):
+            aktuell = m[1]
+            mallar[aktuell] = [m[2]] if m[2] else []
+        elif aktuell is not None:
+            mallar[aktuell].append(rad)
+    return {k: "\n".join(v).strip() for k, v in mallar.items()}
+
+
+def strategiblock(text):
+    """De 15 blocken ur strategifilen: nr, titel, kort och resten av texten (ordagrant)."""
+    block = []
+    for del_ in re.split(r"^## ", text, flags=re.M)[1:]:
+        rader = del_.splitlines()
+        nr, titel = rader[0].split(". ", 1)
+        kropp = [r for r in rader[1:] if r.strip() != "---"]
+        kort = next(r for r in kropp if r.startswith("**Kort:**"))
+        resten = "\n".join(r for r in kropp if r is not kort).strip()
+        block.append({"nr": int(nr), "titel": titel.strip(), "kort": kort[len("**Kort:**"):].strip(), "text": resten})
+    return block
+
+
+def bygg_bank(tentor, uppgifter, mappning, kalltext, strategitext):
     tentor_ut = []
     for t in tentor:
         info = mappning["tentor"][t["id"]]
@@ -215,7 +244,9 @@ def bygg_bank(tentor, uppgifter, mappning, kalltext):
         "profil": {
             "tentansForm": profilavsnitt(kalltext, "Tentans form"),
             "formelblad": profilavsnitt(kalltext, "Formelbladet"),
+            "mallar": metodmallar(kalltext),
         },
+        "strategi": strategiblock(strategitext),
     }
 
 
@@ -243,7 +274,20 @@ def main():
             print("  -", f)
         sys.exit(1)
 
-    bank = bygg_bank(tentor, uppgifter, mappning, kalltext)
+    strategitext = STRATEGI.read_text(encoding="utf-8")
+    mallar = metodmallar(kalltext)
+    for typ, info in mappning["typer"].items():
+        for mall in (info["mall"] if isinstance(info["mall"], list) else [info["mall"]]):
+            if mall not in mallar:
+                fel.append(f"Typen {typ}: metodmallen '{mall}' finns inte i profilens §4")
+    if len(strategiblock(strategitext)) != 15:
+        fel.append("Strategifilen ska ha 15 block")
+    if fel:
+        print(f"VALIDERING MISSLYCKADES ({len(fel)} fel):")
+        for f in fel:
+            print("  -", f)
+        sys.exit(1)
+    bank = bygg_bank(tentor, uppgifter, mappning, kalltext, strategitext)
     UT.write_text("// Genererad av build.py. Redigera inte för hand.\nwindow.BANK = "
                   + json.dumps(bank, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
 
@@ -266,6 +310,8 @@ def main():
     print("  Per typ:          " + ", ".join(f"{k} {v}" for k, v in sorted(per_typ.items(), key=lambda kv: -kv[1])))
     antal_pass = sum(len(d.get("pass", [])) for d in schema["dagar"])
     i_schema = {uid for d in schema["dagar"] for ps in d.get("pass", []) for uid in ps.get("uppgifter", [])}
+    print(f"  Metodmallar:       {len(mallar)} st, alla {len(mappning['typer'])} typer har mall")
+    print(f"  Strategiblock:     {len(bank['strategi'])}")
     print(f"  Schema:            {len(schema['dagar'])} dagar, {antal_pass} pass, {len(i_schema)} olika uppgifter")
     print(f"Skrev {UT.relative_to(ROT)} ({UT.stat().st_size // 1024} kB) och {SCHEMA_UT.relative_to(ROT)}")
 

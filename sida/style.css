@@ -350,3 +350,28 @@ body.tentalage main { padding-top: 1.4rem; }
 .tl-nr a.har-status { border-color: var(--accent); }
 body.tentalage .nasta { justify-content: space-between; }
 button.knapp-stor { font: inherit; color: var(--text); border: 0; cursor: pointer; }
+
+/* ---------- Strategirader och metodmall (diskreta, hopfällda) ---------- */
+details.strategi { margin: 0.6rem 0 1rem; font-size: 0.88rem; color: var(--tyst); }
+details.strategi summary { cursor: pointer; list-style: none; }
+details.strategi summary::-webkit-details-marker { display: none; }
+details.strategi summary:hover { color: var(--text); }
+details.strategi[open] summary { color: var(--text); }
+.strategi-titel { font-weight: 600; }
+details.strategi > .text { margin: 0.6rem 0 0 0; padding-left: 0.9rem; border-left: 2px solid var(--svag); }
+details.strategi > .text p:last-child { margin-bottom: 0; }
+.strategier { margin-top: 1.4rem; }
+
+details.mall { margin: 2rem 0 0; }
+details.mall summary { cursor: pointer; color: var(--tyst); font-size: 0.95rem; }
+details.mall summary:hover, details.mall[open] summary { color: var(--text); }
+details.mall > .text { margin-top: 0.8rem; padding: 1rem 1.2rem 0.2rem; background: var(--yta); border-radius: 8px; font-size: 0.95rem; }
+
+.citat { color: var(--tyst); font-style: italic; }
+
+.repetera .rad-status .tyst { font-size: 0.85rem; }
+
+/* ---------- Strategisidan ---------- */
+.strategiblock { margin-top: 2.6rem; }
+.strategiblock h2 { font-size: 1.15rem; margin-bottom: 0.3rem; }
+.strategi-kort { font-weight: 600; margin: 0 0 0.8rem; }

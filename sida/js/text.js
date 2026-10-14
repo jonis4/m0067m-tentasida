@@ -60,6 +60,9 @@
         if (arLista ? stycke.length : lista.length) tom();
         if (arLista) {
           lista.push(inline(r.slice(2)));
+        } else if (r.startsWith("&gt; ")) {
+          tom();
+          ut.push('<p class="citat">' + inline(r.slice(5)) + "</p>");
         } else if (ensamFormel && formler[+ensamFormel[1]][1]) {
           tom();
           ut.push('<div class="formel">' + r.trim() + "</div>");
