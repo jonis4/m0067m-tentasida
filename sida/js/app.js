@@ -47,6 +47,9 @@
     else ga(foralder, { ersatt: true });
   }
 
+  // Sätts av uppgiftsvyn så att tangenterna vet vad som är föregående/nästa.
+  let tangentKontext = null;
+
   // ---------- Hjälpare ----------
   function pdfLankar(tenta) {
     const etiketter =
@@ -59,6 +62,18 @@
 
   function avsnittText(u) {
     return u.avsnitt.join(" ");
+  }
+
+  function statusEtikett(id) {
+    const s = Status.get(id);
+    return s ? '<span class="rad-status" data-status="' + s.status + '">' + Status.STATUSAR[s.status] + "</span>" : "";
+  }
+
+  function statusKnappar(id) {
+    const s = Status.get(id);
+    return Object.entries(Status.STATUSAR).map(([k, namn], i) =>
+      '<button type="button" class="statusval" data-status="' + k + '" aria-pressed="' + (!!s && s.status === k) + '"'
+      + ' title="Tangent ' + (i + 1) + '">' + namn + "</button>").join("");
   }
 
   function kontextrad(foralder, hoger) {
@@ -89,7 +104,8 @@
       .map((t) =>
         '<li><a href="#/bank/' + t.id + '">'
         + '<span class="rad-namn">' + esc(t.namn) + "</span>"
-        + '<span class="rad-meta">' + (t.harLosning ? "" : "Saknar lösningar") + "</span>"
+        + '<span class="rad-meta">' + (t.harLosning ? "" : "Saknar lösningar · ")
+        + Status.antalGjorda(t.uppgifter) + "/" + t.uppgifter.length + " gjorda</span>"
         + '<span class="pil" aria-hidden="true">→</span></a></li>')
       .join("");
     return '<h1 class="dold">Bank</h1><nav class="flikar" aria-label="Filter">' + flikar + "</nav>"
@@ -103,6 +119,7 @@
       return '<li><a href="#/bank/' + tenta.id + "/" + u.nr + '">'
         + '<span class="nr">' + u.nr + "</span>"
         + '<span class="rad-namn">' + esc(B.typer[u.typ].namn) + "</span>"
+        + statusEtikett(u.id)
         + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
         + '<span class="pil" aria-hidden="true">→</span></a></li>';
     };
@@ -110,7 +127,8 @@
     const vg = tenta.uppgifter.filter((id) => B.uppgifter[id].del === "VG");
     return kontextrad("#/bank", "")
       + "<h1>" + esc(tenta.namn) + "</h1>"
-      + '<p class="tyst">' + TYPNAMN[tenta.typ] + " · 9 uppgifter à 4 p"
+      + '<p class="tyst">' + TYPNAMN[tenta.typ] + " · 9 uppgifter à 4 p · "
+      + Status.antalGjorda(tenta.uppgifter) + "/" + tenta.uppgifter.length + " gjorda"
       + (tenta.harLosning ? "" : " · <strong>lösningsförslag saknas</strong>") + "</p>"
       + '<p class="kalla">' + pdfLankar(tenta) + "</p>"
       + '<h2 class="del">Del för godkänt</h2><ul class="rader">' + g.map(rad).join("") + "</ul>"
@@ -123,7 +141,13 @@
     const kalla = u.id;
     const figurPdfUppgift = tenta.pdf[0];
     const figurPdfLosning = tenta.pdf[tenta.pdf.length - 1];
-    const nasta = tenta.uppgifter.indexOf(u.id) + 1;
+    const index = tenta.uppgifter.indexOf(u.id);
+    const nasta = index + 1;
+    tangentKontext = {
+      forra: index > 0 ? "#/bank/" + tenta.id + "/" + index : null,
+      nasta: nasta < tenta.uppgifter.length ? "#/bank/" + tenta.id + "/" + (nasta + 1) : null,
+      uppgift: u.id,
+    };
 
     const losning = u.losning === null
       ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>'
@@ -141,12 +165,15 @@
       + " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) + "</p></header>"
       + '<div class="text">' + Format.formatera(u.uppgift, figurPdfUppgift, kalla + " uppgift") + "</div>"
       + '<section class="losning">' + losning + "</section>"
+      + '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
+      + '<div class="statusvalen">' + statusKnappar(u.id) + "</div></section>"
       + '<p class="kalla">Original: ' + pdfLankar(tenta) + "</p>"
       + '<nav class="nasta">' + nastaLank + "</nav>"
       + "</article>";
 
     // Lösningen renderas först när man klickar, så den finns inte ens i sidan innan dess.
     setTimeout(() => {
+      app.querySelectorAll(".statusval").forEach((b) => b.addEventListener("click", () => valjStatus(u.id, b.dataset.status)));
       const knapp = app.querySelector(".visa-losning");
       if (!knapp) return;
       const ruta = app.querySelector("#losning");
@@ -159,6 +186,17 @@
       });
     });
     return html;
+  }
+
+  // Klick på vald status tar bort den igen (tillbaka till "ej gjord").
+  function valjStatus(id, status) {
+    const nu = Status.get(id);
+    Status.satt(id, nu && nu.status === status ? null : status);
+    const s = Status.get(id);
+    app.querySelectorAll(".statusval").forEach((b) => {
+      b.setAttribute("aria-pressed", String(!!s && s.status === b.dataset.status));
+    });
+    renderaSidfot();
   }
 
   function vyHittadesInte() {
@@ -177,8 +215,11 @@
     const { delar, q } = rutt();
     if (!delar.length) { ga("#/idag", { ersatt: true }); return; }
     markeraHistorik();
+    if (sidfotLage && sidfotLage.typ === "meddelande" && !sidfotLage.ny) sidfotLage = null;
+    if (sidfotLage) sidfotLage.ny = false;
 
     const [vy, tentaId, nr] = delar;
+    tangentKontext = null;
     let html;
     if (vy === "idag" && delar.length === 1) html = vyIdag();
     else if (vy === "kapitel" && delar.length === 1) html = vyKapitel();
@@ -192,8 +233,136 @@
       if (a.dataset.vy === vy) a.setAttribute("aria-current", "page");
       else a.removeAttribute("aria-current");
     });
+    renderaSidfot();
     window.scrollTo(0, 0);
   }
+
+  // ---------- Sidfot: säkerhetskopia av status ----------
+  const sidfot = document.getElementById("sidfot");
+  let sidfotLage = null; // null | { typ: "import", granskning } | { typ: "rensa" } | { typ: "meddelande", text }
+
+  function renderaSidfot() {
+    const n = Status.antal();
+    let html;
+    if (sidfotLage && sidfotLage.typ === "import") {
+      html = "<p>Filen innehåller status för " + sidfotLage.granskning.antal + " uppgifter. Den ersätter nuvarande status ("
+        + n + " uppgifter).</p>"
+        + '<p><button type="button" class="knapp" data-sidfot="importera-ok">Importera</button> '
+        + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
+    } else if (sidfotLage && sidfotLage.typ === "rensa") {
+      html = "<p>Rensa status för alla " + n + " uppgifter?</p>"
+        + '<p><button type="button" class="knapp" data-sidfot="rensa-ok">Rensa</button> '
+        + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
+    } else {
+      html = (Status.sparbar ? "" : "<p><strong>Statusen kan inte sparas i den här webbläsaren.</strong> Exportera innan du stänger fliken.</p>")
+        + (sidfotLage && sidfotLage.typ === "meddelande"
+          ? "<p>" + esc(sidfotLage.text)
+            + (sidfotLage.angra ? ' <button type="button" class="lank" data-sidfot="angra">Ångra</button>' : "") + "</p>"
+          : "")
+        + "<p>Status: " + n + " av " + Object.keys(B.uppgifter).length + " uppgifter · "
+        + '<button type="button" class="lank" data-sidfot="exportera">Exportera</button> · '
+        + '<button type="button" class="lank" data-sidfot="importera">Importera</button> · '
+        + '<button type="button" class="lank" data-sidfot="rensa">Rensa</button></p>'
+        + sparfilRad();
+    }
+    sidfot.innerHTML = html;
+  }
+
+  function sparfilRad() {
+    if (!Sparfil.stod) return "";
+    const namn = esc(Sparfil.namn || "");
+    const sluta = ' · <button type="button" class="lank" data-sidfot="sparfil-sluta">Sluta</button>';
+    switch (Sparfil.lage) {
+      case "aktiv":
+        return "<p>Sparas automatiskt i " + namn
+          + ' · <button type="button" class="lank" data-sidfot="sparfil-valj">Byt fil</button>' + sluta + "</p>";
+      case "behover-ok":
+        return '<p><button type="button" class="knapp" data-sidfot="sparfil-ateranslut">Fortsätt spara automatiskt i ' + namn + "</button>"
+          + sluta + "</p>";
+      case "fel":
+        return "<p><strong>Kunde inte spara till " + namn + ".</strong> "
+          + '<button type="button" class="lank" data-sidfot="sparfil-valj">Välj fil igen</button>' + sluta + "</p>";
+      default:
+        return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Spara automatiskt till fil…</button></p>';
+    }
+  }
+
+  function exportera() {
+    const json = JSON.stringify(Status.exportera(), null, 1);
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "m0067m-status-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const filval = document.createElement("input");
+  filval.type = "file";
+  filval.accept = ".json,application/json";
+  filval.hidden = true;
+  document.body.appendChild(filval);
+  filval.addEventListener("change", () => {
+    const fil = filval.files[0];
+    if (!fil) return;
+    fil.text().then((text) => {
+      filval.value = "";
+      let g;
+      try { g = Status.granska(JSON.parse(text)); } catch (e) { g = { ok: false, fel: "Filen gick inte att läsa som JSON." }; }
+      sidfotLage = g.ok ? { typ: "import", granskning: g } : { typ: "meddelande", text: g.fel };
+      renderaSidfot();
+    });
+  });
+
+  sidfot.addEventListener("click", (e) => {
+    const k = e.target.closest("[data-sidfot]");
+    if (!k) return;
+    const handling = k.dataset.sidfot;
+    if (handling === "exportera") { exportera(); return; }
+    if (handling === "importera") { filval.click(); return; }
+    if (handling === "sparfil-valj") { Sparfil.valj(); return; }
+    if (handling === "sparfil-ateranslut") { Sparfil.ateranslut(); return; }
+    if (handling === "sparfil-sluta") { Sparfil.sluta(); return; }
+    if (handling === "angra") {
+      Status.angra();
+      sidfotLage = { typ: "meddelande", text: "Ångrat.", ny: true };
+      rendera();
+      return;
+    }
+    if (handling === "rensa") sidfotLage = { typ: "rensa" };
+    else if (handling === "avbryt") sidfotLage = null;
+    else if (handling === "importera-ok") {
+      Status.ersattAllt(sidfotLage.granskning.uppgifter);
+      sidfotLage = { typ: "meddelande", text: "Statusen är importerad.", angra: true, ny: true };
+      rendera();
+      return;
+    } else if (handling === "rensa-ok") {
+      Status.rensa();
+      sidfotLage = { typ: "meddelande", text: "All status är rensad.", angra: true, ny: true };
+      rendera();
+      return;
+    }
+    renderaSidfot();
+  });
+
+  // ---------- Tangentbord (layoutspec §8.6) ----------
+  // ← → mellan uppgifter, L visar/döljer lösningen, 1 2 3 sätter status.
+  document.addEventListener("keydown", (e) => {
+    if (!tangentKontext || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+    const statusar = Object.keys(Status.STATUSAR);
+    if (e.key === "ArrowLeft" && tangentKontext.forra) ga(tangentKontext.forra, { ersatt: true });
+    else if (e.key === "ArrowRight" && tangentKontext.nasta) ga(tangentKontext.nasta, { ersatt: true });
+    else if (e.key === "l" || e.key === "L") {
+      const k = app.querySelector(".visa-losning");
+      if (!k) return;
+      k.click();
+    } else if (["1", "2", "3"].includes(e.key)) valjStatus(tangentKontext.uppgift, statusar[+e.key - 1]);
+    else return;
+    e.preventDefault();
+  });
 
   // Klick på länkar som ska ersätta historikposten, eller gå tillbaka.
   document.addEventListener("click", (e) => {
@@ -210,5 +379,7 @@
   });
 
   window.addEventListener("hashchange", rendera);
+  Sparfil.vidAndring(renderaSidfot);
   rendera();
+  Sparfil.init();
 })();

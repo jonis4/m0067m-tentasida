@@ -66,7 +66,7 @@ h2 { font-size: 1rem; margin: 0; }
 main {
   max-width: var(--bredd);
   margin: 0 auto;
-  padding: 2.6rem 16px 5rem;
+  padding: 2.6rem 16px 3rem;
 }
 
 /* ---------- Bank ---------- */
@@ -163,3 +163,57 @@ h2.del {
 .nasta { display: flex; justify-content: flex-end; margin-top: 2.4rem; }
 .nasta a { text-decoration: none; padding: 0.4rem 0; }
 .nasta a:hover { text-decoration: underline; }
+
+/* ---------- Status ---------- */
+.status { margin: 2.4rem 0 0; }
+.status h2 { font-size: 0.95rem; font-weight: 400; color: var(--tyst); margin-bottom: 0.6rem; }
+.statusvalen { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.statusval {
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: none;
+  border: 1px solid var(--svag);
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+}
+.statusval:hover { border-color: var(--tyst); }
+/* Den enda accentfärgen: det du själv har bedömt. */
+.statusval[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.rad-status { font-size: 0.88rem; color: var(--text); }
+
+/* ---------- Sidfot ---------- */
+.sidfot {
+  max-width: var(--bredd);
+  margin: 0 auto;
+  padding: 1.6rem 16px 2.4rem;
+  font-size: 0.85rem;
+  color: var(--tyst);
+}
+.sidfot p { margin: 0 0 0.6rem; }
+.sidfot strong { color: var(--text); }
+button.lank {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+button.lank:hover { color: var(--text); }
+button.knapp {
+  font: inherit;
+  color: var(--text);
+  background: var(--yta);
+  border: 0;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  margin-right: 0.4rem;
+  cursor: pointer;
+}
+button.knapp:hover { background: var(--svag); }
+.uppgift > .kalla { margin-top: 2.2rem; }

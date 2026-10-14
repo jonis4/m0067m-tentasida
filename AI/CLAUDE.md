@@ -261,7 +261,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - [x] Fas 0 – Orientering
 - [x] Fas 1 – Datamodell och byggskript
 - [x] Fas 2 – Skal, Bank och uppgiftsvy
-- [ ] Fas 3 – Status
+- [x] Fas 3 – Status
 - [ ] Fas 4 – Kapitel och planeringsappen
 - [ ] Fas 5 – Schema och Idag
 - [ ] Fas 6 – Tentaläge
@@ -281,6 +281,8 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Breda displayformler (`.formel`) får gå bredare än textspalten (upp till 74rem).
 - Ej byggt än: [Skriv som tenta] (fas 6), statusval (fas 3), "Har du räknat klart?"-friktion (valfri, §5).
 - Verifiering: headless Edge + puppeteer-core (testskript i scratchpad, inte i projektet).
+- Fas 3: status i `js/status.js` (localStorage-nyckel `m0067m.status.v1`, varje post har `status`, `tid` och `historik`). Statusnycklar: `hjalp`, `sjalv`, `sitter` (null = ej gjord). Klick på vald status tar bort den. Tangenter ← → L 1 2 3. Sidfoten har Exportera/Importera/Rensa med bekräftelse i sidan och Ångra.
+- Automatisk sparfil (`js/sparfil.js`, File System Access API, bara Edge/Chrome): filhandtaget sparas i IndexedDB (`m0067m`/`kv`/`sparfil`), och filen har samma format som exporten. `m0067m-status*.json` ligger i `.gitignore`. Den riktiga filväljaren på file:// är inte automattestad (testat via lokal server).
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**
