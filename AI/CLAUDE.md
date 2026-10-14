@@ -262,7 +262,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - [x] Fas 1 – Datamodell och byggskript
 - [x] Fas 2 – Skal, Bank och uppgiftsvy
 - [x] Fas 3 – Status
-- [ ] Fas 4 – Kapitel och planeringsappen
+- [x] Fas 4 – Kapitel (utan planeringsappen, se Beslut)
 - [ ] Fas 5 – Schema och Idag
 - [ ] Fas 6 – Tentaläge
 - [ ] Fas 7 – Strategi, Repetera och examinatormallar
@@ -283,7 +283,10 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Verifiering: headless Edge + puppeteer-core (testskript i scratchpad, inte i projektet).
 - Fas 3: status i `js/status.js` (localStorage-nyckel `m0067m.status.v1`, varje post har `status`, `tid` och `historik`). Statusnycklar: `hjalp`, `sjalv`, `sitter` (null = ej gjord). Klick på vald status tar bort den. Tangenter ← → L 1 2 3. Sidfoten har Exportera/Importera/Rensa med bekräftelse i sidan och Ångra.
 - Automatisk sparfil (`js/sparfil.js`, File System Access API, bara Edge/Chrome): filhandtaget sparas i IndexedDB (`m0067m`/`kv`/`sparfil`), och filen har samma format som exporten. `m0067m-status*.json` ligger i `.gitignore`. Den riktiga filväljaren på file:// är inte automattestad (testat via lokal server).
+- **Fas 4: planeringsappen kopplas INTE in** (Jonatans beslut). Den ligger i `C:\Users\jonat\Desktop\matte schema\` och får **bara läsas, aldrig ändras**. Jonatan använder den för repetition, och tentasidan för tentaplugg.
+- Kapitel bygger i stället på tentauppgifterna: stapeln = andel av avsnittets uppgifter (utom bevis) med status `sjalv` eller `sitter`. Sortering: Ordning / Svagast först (flikarna ligger överst, inte längst ner som i specen). Rutter: `#/kapitel`, `#/kapitel/1.4`, `#/kapitel/1.4/<uppgift-id>`. Avsnittsnamnen i `mappning.json` är bokens titlar.
+- Fas 5: "säkerheten per kapitel från planeringsappen" ersätts av Kapitel-staplarna och det Jonatan själv säger.
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**
-- Var ligger planeringsappen, och i vilket format är datan? (fas 4)
+- (inga just nu)
