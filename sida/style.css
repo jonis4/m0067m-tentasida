@@ -1,0 +1,165 @@
+/* Gråskala som bas, en accentfärg som bara får betyda något (layoutspec §9). */
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --tyst: #6b6b6b;
+  --svag: #e6e6e6;
+  --yta: #f4f4f4;
+  --accent: #0a66c2;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bredd: 44rem;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161616;
+    --text: #e8e8e8;
+    --tyst: #9a9a9a;
+    --svag: #2e2e2e;
+    --yta: #202020;
+    --accent: #6cb0ff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+h1, h2, strong { font-weight: 600; }
+h1 { font-size: 1.6rem; line-height: 1.25; margin: 0 0 0.4rem; }
+h2 { font-size: 1rem; margin: 0; }
+
+.dold { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.tyst { color: var(--tyst); }
+
+/* ---------- Huvudnav ---------- */
+.huvudnav {
+  display: flex;
+  gap: 2.2rem;
+  max-width: var(--bredd);
+  margin: 0 auto;
+  padding: 1.4rem 16px 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.huvudnav a { color: var(--tyst); text-decoration: none; padding: 0.3rem 0; }
+.huvudnav a:hover { color: var(--text); }
+.huvudnav a[aria-current="page"] { color: var(--text); font-weight: 600; }
+
+main {
+  max-width: var(--bredd);
+  margin: 0 auto;
+  padding: 2.6rem 16px 5rem;
+}
+
+/* ---------- Bank ---------- */
+.flikar { display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem; margin-bottom: 2rem; }
+.flikar a { color: var(--tyst); text-decoration: none; padding: 0.2rem 0; }
+.flikar a:hover { color: var(--text); }
+.flikar a[aria-current="page"] { color: var(--text); font-weight: 600; }
+
+.rader { list-style: none; margin: 0; padding: 0; }
+.rader a {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.75rem 0.6rem;
+  margin: 0 -0.6rem;
+  text-decoration: none;
+  border-radius: 6px;
+}
+.rader a:hover { background: var(--yta); }
+.rad-namn { flex: 1; }
+.rad-meta { color: var(--tyst); font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+.pil { color: var(--tyst); }
+.nr { width: 1.2rem; color: var(--tyst); font-variant-numeric: tabular-nums; }
+
+h2.del {
+  margin: 2.4rem 0 0.4rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tyst);
+}
+
+.kalla { font-size: 0.88rem; color: var(--tyst); margin: 0.4rem 0 0; }
+.kalla .sep { color: var(--tyst); }
+
+/* ---------- Kontextrad (Tillbaka + var man är) ---------- */
+.kontext {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin: -1rem 0 2rem;
+  font-size: 0.92rem;
+  color: var(--tyst);
+}
+.kontext a { color: var(--tyst); text-decoration: none; }
+.kontext a:hover { color: var(--text); }
+.kontext-namn { text-align: right; }
+
+/* ---------- Uppgiftsvy ---------- */
+.uppgift-huvud {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.3rem 1rem;
+  margin-bottom: 1.6rem;
+}
+.uppgift-huvud h1 { margin: 0; }
+.meta { margin: 0; color: var(--tyst); font-size: 0.9rem; }
+
+.text p { margin: 0 0 1rem; }
+.text ul { margin: 0 0 1rem; padding-left: 1.3rem; }
+/* Formler får gå bredare än texten (upp till nästan hela fönstret) så att långa kedjor inte kapas. */
+.formel { width: min(calc(100vw - 40px), 74rem); margin: 0 0 1rem 50%; transform: translateX(-50%); padding: 0.1rem 0; }
+.formel .katex-display { margin: 0.2rem 0; }
+.text .katex { font-size: 1.12em; }
+.katex-display { overflow-x: auto; overflow-y: hidden; }
+
+.figur, .figur-inline { color: var(--tyst); }
+.figur { font-size: 0.92rem; }
+.figurlank { white-space: nowrap; margin-left: 0.3rem; }
+
+.tex-fel { color: var(--tyst); background: var(--yta); padding: 0 0.2rem; }
+
+.losning { margin: 2.6rem 0 2rem; }
+.visa-losning {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.2rem;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--yta);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.visa-losning:hover { background: var(--svag); }
+.visa-losning[aria-expanded="true"] { background: none; padding-left: 0; padding-right: 0; color: var(--tyst); }
+.losningstext { margin-top: 1rem; }
+.saknas { padding: 1rem 1.2rem; background: var(--yta); border-radius: 8px; color: var(--tyst); margin: 0; }
+
+.nasta { display: flex; justify-content: flex-end; margin-top: 2.4rem; }
+.nasta a { text-decoration: none; padding: 0.4rem 0; }
+.nasta a:hover { text-decoration: underline; }

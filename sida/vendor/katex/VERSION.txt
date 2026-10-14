@@ -1,0 +1,1 @@
+KaTeX 0.16.11 (npm katex@0.16.11, dist/). Bara woff2-typsnitt.

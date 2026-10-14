@@ -1,0 +1,10 @@
+# Kursmaterial (LTU) – stannar lokalt
+*.pdf
+AI/M0067M_traningsdata.jsonl
+
+# System och Python
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+desktop.ini
