@@ -1,5 +1,6 @@
 {
   "_info": "Tentapluggschemat, godkänt av Jonatan 2026-10-14 (reviderat: start 15 okt, läs 6.5 först). Läses av build.py som skriver data/schema.js. Ett pass har rubrik, valfri beskrivning (annars 'Blandat: <typer>'), uppgifter (uppgifts-id) och valfritt 'tenta' (tenta-id, startar tentaläge i fas 6) och 'tid' (minuter). En dag utan pass har 'notis'.",
+  "namn": "Jonatans schema",
   "tentadatum": "2026-10-27",
   "dagar": [
     {

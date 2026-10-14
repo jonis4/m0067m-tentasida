@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>M0067M</title>
+  <script>
+    // Valt tema sätts innan sidan ritas, så att den inte blinkar till i fel färg.
+    try { var t = localStorage.getItem("m0067m.tema"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="style.css">
 </head>

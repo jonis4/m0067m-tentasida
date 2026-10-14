@@ -25,7 +25,13 @@
     }
   }
   // ---------- Schema och datum ----------
-  const S = window.SCHEMA;
+  // Vilket schema som används: standard (window.SCHEMA) eller ett valt ur window.SCHEMOR (t.ex. Eriks).
+  const SCHEMA_NYCKEL = "m0067m.schema";
+  let valtSchema = null;
+  try { valtSchema = localStorage.getItem(SCHEMA_NYCKEL); } catch (e) { /* standard */ }
+  const SCHEMOR = window.SCHEMOR || {};
+  if (!SCHEMOR[valtSchema]) valtSchema = null;
+  const S = valtSchema ? SCHEMOR[valtSchema] : window.SCHEMA;
   const dagMap = Object.fromEntries(S.dagar.map((d) => [d.datum, d]));
   const VECKODAG = ["Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag"];
   const MANAD = ["jan", "feb", "mars", "april", "maj", "juni", "juli", "aug", "sep", "okt", "nov", "dec"];
@@ -784,7 +790,9 @@
         + '<button type="button" class="lank" data-sidfot="rensa">Rensa</button></p>'
         + sparfilRad()
         + '<p><a href="#/strategi">Strategi</a> · Strategirader ' + (inst.strategi ? "på" : "av")
-        + ' · <button type="button" class="lank" data-sidfot="strategi-vaxla">' + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p>";
+        + ' · <button type="button" class="lank" data-sidfot="strategi-vaxla">' + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p>"
+        + temaRad()
+        + schemaRad();
     }
     sidfot.innerHTML = html;
   }
@@ -806,6 +814,25 @@
       default:
         return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Spara automatiskt till fil…</button></p>';
     }
+  }
+
+  function temaRad() {
+    let tema = "auto";
+    try { tema = localStorage.getItem("m0067m.tema") || "auto"; } catch (e) { /* auto */ }
+    return "<p>Tema: " + [["auto", "Auto"], ["light", "Ljust"], ["dark", "Mörkt"]].map(([k, namn]) =>
+      '<button type="button" class="lank tema-val" data-sidfot="tema:' + k + '" aria-pressed="' + (k === tema) + '">' + namn + "</button>")
+      .join(" · ") + "</p>";
+  }
+
+  function schemaRad() {
+    const nycklar = Object.keys(SCHEMOR);
+    if (!nycklar.length) return "";
+    if (valtSchema) {
+      return "<p>" + esc(S.namn) + ' används · <button type="button" class="lank" data-sidfot="schema:">Byt till '
+        + esc(window.SCHEMA.namn || "standardschemat") + "</button></p>";
+    }
+    return "<p>" + nycklar.map((k) => '<button type="button" class="lank" data-sidfot="schema:' + k + '">Importera '
+      + esc(SCHEMOR[k].namn) + "</button>").join(" · ") + "</p>";
   }
 
   function exportera() {
@@ -844,6 +871,21 @@
     if (handling === "exportera") { exportera(); return; }
     if (handling === "importera") { filval.click(); return; }
     if (handling === "sparfil-valj") { Sparfil.valj(); return; }
+    if (handling.startsWith("tema:")) {
+      const tema = handling.slice(5);
+      try { if (tema === "auto") localStorage.removeItem("m0067m.tema"); else localStorage.setItem("m0067m.tema", tema); } catch (e2) { /* bara den här gången */ }
+      if (tema === "auto") delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = tema;
+      renderaSidfot();
+      return;
+    }
+    if (handling.startsWith("schema:")) {
+      const nyckel = handling.slice(7);
+      try { if (nyckel) localStorage.setItem(SCHEMA_NYCKEL, nyckel); else localStorage.removeItem(SCHEMA_NYCKEL); } catch (e2) { /* ignoreras */ }
+      location.hash = "#/idag";
+      location.reload();
+      return;
+    }
     if (handling === "strategi-vaxla") { inst.strategi = !inst.strategi; sparaInst(); rendera(); return; }
     if (handling === "sparfil-ateranslut") { Sparfil.ateranslut(); return; }
     if (handling === "sparfil-sluta") { Sparfil.sluta(); return; }

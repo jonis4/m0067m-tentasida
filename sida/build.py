@@ -267,6 +267,13 @@ def main():
     fel, utan_losning = validera(tentor, uppgifter, mappning)
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     fel += validera_schema(schema, uppgifter, tentor)
+    # Andra personers scheman: data/schema-<namn>.json. Väljs med en knapp i sidfoten.
+    andra = {f.stem[len("schema-"):]: json.loads(f.read_text(encoding="utf-8"))
+             for f in sorted(SCHEMA.parent.glob("schema-*.json"))}
+    for nyckel, s in andra.items():
+        fel += [f"schema-{nyckel}: {f}" for f in validera_schema(s, uppgifter, tentor)]
+        if not s.get("namn"):
+            fel.append(f"schema-{nyckel}.json: saknar 'namn' (t.ex. \"Eriks schema\")")
 
     if fel:
         print(f"VALIDERING MISSLYCKADES ({len(fel)} fel):")
@@ -291,9 +298,11 @@ def main():
     UT.write_text("// Genererad av build.py. Redigera inte för hand.\nwindow.BANK = "
                   + json.dumps(bank, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
 
-    schema_ut = {k: v for k, v in schema.items() if not k.startswith("_")}
-    SCHEMA_UT.write_text("// Genererad av build.py från schema.json. Redigera schema.json, inte den här filen.\nwindow.SCHEMA = "
-                         + json.dumps(schema_ut, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
+    utan_info = lambda s: {k: v for k, v in s.items() if not k.startswith("_")}
+    SCHEMA_UT.write_text("// Genererad av build.py från schema.json och schema-*.json. Redigera json-filerna, inte den här filen.\n"
+                         + "window.SCHEMA = " + json.dumps(utan_info(schema), ensure_ascii=False, indent=1) + ";\n"
+                         + "window.SCHEMOR = " + json.dumps({k: utan_info(s) for k, s in andra.items()}, ensure_ascii=False, indent=1) + ";\n",
+                         encoding="utf-8")
 
     alla_text = [u["uppgift"] + "\n" + (u["losning"] or "") for u in uppgifter]
     per_typ = {}
@@ -313,6 +322,8 @@ def main():
     print(f"  Metodmallar:       {len(mallar)} st, alla {len(mappning['typer'])} typer har mall")
     print(f"  Strategiblock:     {len(bank['strategi'])}")
     print(f"  Schema:            {len(schema['dagar'])} dagar, {antal_pass} pass, {len(i_schema)} olika uppgifter")
+    for nyckel, s in andra.items():
+        print(f"  {s['namn'] + ':':<19}{len(s['dagar'])} dagar, {sum(len(d.get('pass', [])) for d in s['dagar'])} pass")
     print(f"Skrev {UT.relative_to(ROT)} ({UT.stat().st_size // 1024} kB) och {SCHEMA_UT.relative_to(ROT)}")
 
     if "--tabell" in sys.argv:

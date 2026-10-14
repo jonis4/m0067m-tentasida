@@ -12,8 +12,9 @@
   color-scheme: light dark;
 }
 
+/* Mörkt läge: följer systemet (Auto) om inget annat är valt i sidfoten (data-theme på <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #161616;
     --text: #e8e8e8;
     --tyst: #9a9a9a;
@@ -22,6 +23,16 @@
     --accent: #6cb0ff;
   }
 }
+:root[data-theme="dark"] {
+  --bg: #161616;
+  --text: #e8e8e8;
+  --tyst: #9a9a9a;
+  --svag: #2e2e2e;
+  --yta: #202020;
+  --accent: #6cb0ff;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 
 * { box-sizing: border-box; }
 
@@ -375,3 +386,28 @@ details.mall > .text { margin-top: 0.8rem; padding: 1rem 1.2rem 0.2rem; backgrou
 .strategiblock { margin-top: 2.6rem; }
 .strategiblock h2 { font-size: 1.15rem; margin-bottom: 0.3rem; }
 .strategi-kort { font-weight: 600; margin: 0 0 0.8rem; }
+
+/* ---------- Pekskärmar och smala skärmar: större klickytor (minst ~40 px) ---------- */
+@media (pointer: coarse), (max-width: 560px) {
+  .huvudnav a { padding: 0.75rem 0; }
+  .dagpil { display: inline-block; min-width: 2.75rem; padding: 0.55rem 0; text-align: center; }
+  .kontext a { display: inline-block; padding: 0.7rem 0; }
+  .kontext { margin-top: -1.4rem; margin-bottom: 1.4rem; }
+  details.mall summary, details.strategi summary { padding: 0.6rem 0; }
+  .hela-schemat a, .sidfot a { display: inline-block; padding: 0.6rem 0; }
+  .sidfot button.lank { padding: 0.6rem 0; }
+  .flikar a { padding: 0.6rem 0; }
+  .nasta a, .nasta button { display: inline-block; padding: 0.7rem 0; }
+}
+
+/* Smala skärmar: källan på första raden (med pilen), status och avsnitt på raden under. */
+@media (max-width: 560px) {
+  .rader a:not(:has(.nr)) { flex-wrap: wrap; column-gap: 0.7rem; row-gap: 0.1rem; }
+  .rader a:not(:has(.nr)) > .rad-namn { order: 0; flex: 1 0 calc(100% - 2rem); }
+  .rader a:not(:has(.nr)) > .pil { order: 1; }
+  .rader a:not(:has(.nr)) > .rad-status { order: 2; font-size: 0.85rem; }
+  .rader a:not(:has(.nr)) > .rad-meta { order: 3; font-size: 0.85rem; }
+}
+
+/* Valt tema i sidfoten */
+.sidfot .tema-val[aria-pressed="true"] { color: var(--text); font-weight: 600; text-decoration: none; }
