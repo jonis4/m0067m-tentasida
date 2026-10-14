@@ -15,6 +15,17 @@
   const TYPNAMN = { tenta: "Gammal tenta", ovningstenta: "Övningstenta", diagnos: "Diagnostiskt test" };
   const tentaMap = Object.fromEntries(B.tentor.map((t) => [t.id, t]));
 
+  // Avsnitt → uppgifts-id, i samma ordning som i Bank. Bevis hålls isär (låg prioritet).
+  const avsnittOrdning = Object.keys(B.avsnitt);
+  const perAvsnitt = Object.fromEntries(avsnittOrdning.map((a) => [a, { ovning: [], bevis: [] }]));
+  for (const t of B.tentor) {
+    for (const id of t.uppgifter) {
+      const u = B.uppgifter[id];
+      for (const a of u.avsnitt) perAvsnitt[a][u.typ === "bevis" ? "bevis" : "ovning"].push(id);
+    }
+  }
+  const klarad = (id) => { const s = Status.get(id); return !!s && (s.status === "sjalv" || s.status === "sitter"); };
+
   // ---------- Historik: så att "Tillbaka" går dit man kom ifrån ----------
   // Varje historikpost får ett djup i history.state. Djup > 1 betyder att det finns en
   // tidigare sida inne i appen, och då gör Tillbaka samma sak som webbläsarens bakåtknapp.
@@ -88,9 +99,65 @@
       + '<a href="#/bank">Bank →</a></p>';
   }
 
-  function vyKapitel() {
-    document.title = "Kapitel · M0067M";
-    return '<h1>Kapitel</h1><p class="tyst">Här kommer läget per kapitel, när planeringsappen är inkopplad.</p>';
+  const SORTERING = [["ordning", "Ordning"], ["svagast", "Svagast först"]];
+
+  function kapitelHref(avsnitt, sort) {
+    return "#/kapitel" + (avsnitt ? "/" + avsnitt : "") + (sort === "svagast" ? "?sort=svagast" : "");
+  }
+
+  function vyKapitel(q, oppet) {
+    document.title = (oppet ? oppet + " " + B.avsnitt[oppet] + " · " : "") + "Kapitel · M0067M";
+    const sort = q.get("sort") === "svagast" ? "svagast" : "ordning";
+    const flikar = SORTERING.map(([k, namn]) =>
+      '<a href="' + kapitelHref(oppet, k) + '" data-ersatt' + (k === sort ? ' aria-current="page"' : "") + ">" + namn + "</a>").join("");
+
+    let ordning = avsnittOrdning.slice();
+    if (sort === "svagast") {
+      const andel = (a) => { const o = perAvsnitt[a].ovning; return o.length ? o.filter(klarad).length / o.length : 2; };
+      ordning.sort((a, b) => andel(a) - andel(b)
+        || perAvsnitt[b].ovning.length - perAvsnitt[a].ovning.length
+        || avsnittOrdning.indexOf(a) - avsnittOrdning.indexOf(b));
+    }
+
+    const uppgRad = (a) => (id) => {
+      const u = B.uppgifter[id];
+      return '<li><a href="#/kapitel/' + a + "/" + id + '">'
+        + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr
+        + ' <span class="tyst">· ' + esc(B.typer[u.typ].namn) + "</span></span>"
+        + statusEtikett(id)
+        + '<span class="pil" aria-hidden="true">→</span></a></li>';
+    };
+
+    const rader = ordning.map((a) => {
+      const { ovning, bevis } = perAvsnitt[a];
+      const namn = '<span class="avsnitt-nr">' + a + '</span><span class="rad-namn">' + esc(B.avsnitt[a]) + "</span>";
+      if (!ovning.length && !bevis.length) {
+        return '<li class="kapitel tomt"><div class="kapitelrad">' + namn
+          + '<span class="rad-meta">inga tentauppgifter</span></div></li>';
+      }
+      const n = ovning.filter(klarad).length;
+      const stapel = ovning.length
+        ? '<span class="stapel" role="img" aria-label="' + n + " av " + ovning.length + ' klarade"><span style="width:'
+          + Math.round((100 * n) / ovning.length) + '%"></span></span><span class="rad-meta antal">' + n + "/" + ovning.length + "</span>"
+        : '<span class="rad-meta">bara bevis</span>';
+      const ar = a === oppet;
+      let html = '<li class="kapitel' + (ar ? " oppen" : "") + '" id="avsnitt-' + a.replace(".", "-") + '">'
+        + '<a class="kapitelrad" href="' + kapitelHref(ar ? null : a, sort) + '" data-ersatt aria-expanded="' + ar + '">'
+        + namn + stapel + "</a>";
+      if (ar) {
+        const forsta = ovning.find((id) => !klarad(id)) || ovning[0] || bevis[0];
+        html += '<div class="utfallt">'
+          + (ovning.length ? '<ul class="rader">' + ovning.map(uppgRad(a)).join("") + "</ul>" : "")
+          + (bevis.length ? '<h3 class="del">Bevis · om tid finns</h3><ul class="rader">' + bevis.map(uppgRad(a)).join("") + "</ul>" : "")
+          + '<p><a class="knapp-stor" href="#/kapitel/' + a + "/" + forsta + '">Öva bara det här kapitlet</a></p>'
+          + "</div>";
+      }
+      return html + "</li>";
+    }).join("");
+
+    return '<h1 class="dold">Kapitel</h1><nav class="flikar" aria-label="Sortering">' + flikar + "</nav>"
+      + '<p class="tyst forklaring">Stapeln visar hur många av avsnittets tentauppgifter du gjort själv eller som sitter. Bevis räknas inte.</p>'
+      + '<ul class="kapitellista">' + rader + "</ul>";
   }
 
   function vyBank(q) {
@@ -135,33 +202,32 @@
       + '<h2 class="del">Del för högre betyg</h2><ul class="rader">' + vg.map(rad).join("") + "</ul>";
   }
 
-  function vyUppgift(tenta, nr) {
-    const u = B.uppgifter[tenta.id + "-" + nr];
-    document.title = "Uppgift " + nr + " · " + tenta.namn + " · M0067M";
+  // ctx: { ids, href(id), foralder, foralderNamn, sistaText, visaKalla }
+  function vyUppgift(u, ctx) {
+    const tenta = tentaMap[u.tenta];
+    document.title = "Uppgift " + u.nr + " · " + tenta.namn + " · M0067M";
     const kalla = u.id;
     const figurPdfUppgift = tenta.pdf[0];
     const figurPdfLosning = tenta.pdf[tenta.pdf.length - 1];
-    const index = tenta.uppgifter.indexOf(u.id);
-    const nasta = index + 1;
-    tangentKontext = {
-      forra: index > 0 ? "#/bank/" + tenta.id + "/" + index : null,
-      nasta: nasta < tenta.uppgifter.length ? "#/bank/" + tenta.id + "/" + (nasta + 1) : null,
-      uppgift: u.id,
-    };
+    const index = ctx.ids.indexOf(u.id);
+    const forra = index > 0 ? ctx.href(ctx.ids[index - 1]) : null;
+    const nasta = index + 1 < ctx.ids.length ? ctx.href(ctx.ids[index + 1]) : null;
+    tangentKontext = { forra, nasta, uppgift: u.id };
 
     const losning = u.losning === null
       ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>'
       : '<button type="button" class="visa-losning" aria-expanded="false" aria-controls="losning">Visa lösningsförslag</button>'
         + '<div id="losning" class="losningstext text" hidden></div>';
 
-    const nastaLank = nasta < tenta.uppgifter.length
-      ? '<a href="#/bank/' + tenta.id + "/" + (nasta + 1) + '" data-ersatt>Nästa uppgift →</a>'
-      : '<a href="#/bank/' + tenta.id + '" data-tillbaka="#/bank/' + tenta.id + '">Sista uppgiften. Tillbaka till tentan</a>';
+    const nastaLank = nasta
+      ? '<a href="' + nasta + '" data-ersatt>Nästa uppgift →</a>'
+      : '<a href="' + ctx.foralder + '" data-tillbaka="' + ctx.foralder + '">Sista uppgiften. ' + ctx.sistaText + "</a>";
 
-    const html = kontextrad("#/bank/" + tenta.id, tenta.namn)
+    const html = kontextrad(ctx.foralder, ctx.foralderNamn)
       + '<article class="uppgift">'
-      + '<header class="uppgift-huvud"><h1>Uppgift ' + nr + "</h1>"
-      + '<p class="meta"><span title="' + (u.del === "G" ? "Del för godkänt" : "Del för högre betyg") + '">' + u.del + "</span>"
+      + '<header class="uppgift-huvud"><h1>Uppgift ' + u.nr + "</h1>"
+      + '<p class="meta">' + (ctx.visaKalla ? esc(tenta.namn) + " · " : "")
+      + '<span title="' + (u.del === "G" ? "Del för godkänt" : "Del för högre betyg") + '">' + u.del + "</span>"
       + " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) + "</p></header>"
       + '<div class="text">' + Format.formatera(u.uppgift, figurPdfUppgift, kalla + " uppgift") + "</div>"
       + '<section class="losning">' + losning + "</section>"
@@ -186,6 +252,29 @@
       });
     });
     return html;
+  }
+
+  function bankKontext(tenta) {
+    return {
+      ids: tenta.uppgifter,
+      href: (id) => "#/bank/" + tenta.id + "/" + B.uppgifter[id].nr,
+      foralder: "#/bank/" + tenta.id,
+      foralderNamn: tenta.namn,
+      sistaText: "Tillbaka till tentan",
+      visaKalla: false,
+    };
+  }
+
+  function kapitelKontext(a) {
+    const ids = perAvsnitt[a].ovning.concat(perAvsnitt[a].bevis);
+    return {
+      ids,
+      href: (id) => "#/kapitel/" + a + "/" + id,
+      foralder: "#/kapitel/" + a,
+      foralderNamn: a + " " + B.avsnitt[a],
+      sistaText: "Tillbaka till kapitlet",
+      visaKalla: true,
+    };
   }
 
   // Klick på vald status tar bort den igen (tillbaka till "ej gjord").
@@ -218,14 +307,23 @@
     if (sidfotLage && sidfotLage.typ === "meddelande" && !sidfotLage.ny) sidfotLage = null;
     if (sidfotLage) sidfotLage.ny = false;
 
-    const [vy, tentaId, nr] = delar;
+    const [vy, a1, a2] = delar;
     tangentKontext = null;
-    let html;
+    let html, rullaTill = null;
     if (vy === "idag" && delar.length === 1) html = vyIdag();
-    else if (vy === "kapitel" && delar.length === 1) html = vyKapitel();
+    else if (vy === "kapitel" && delar.length === 1) html = vyKapitel(q, null);
+    else if (vy === "kapitel" && perAvsnitt[a1] && delar.length === 2) {
+      html = vyKapitel(q, a1);
+      rullaTill = "avsnitt-" + a1.replace(".", "-");
+    }
+    else if (vy === "kapitel" && perAvsnitt[a1] && delar.length === 3 && kapitelKontext(a1).ids.includes(a2)) {
+      html = vyUppgift(B.uppgifter[a2], kapitelKontext(a1));
+    }
     else if (vy === "bank" && delar.length === 1) html = vyBank(q);
-    else if (vy === "bank" && tentaMap[tentaId] && delar.length === 2) html = vyTenta(tentaMap[tentaId]);
-    else if (vy === "bank" && tentaMap[tentaId] && B.uppgifter[tentaId + "-" + nr] && delar.length === 3) html = vyUppgift(tentaMap[tentaId], nr);
+    else if (vy === "bank" && tentaMap[a1] && delar.length === 2) html = vyTenta(tentaMap[a1]);
+    else if (vy === "bank" && tentaMap[a1] && B.uppgifter[a1 + "-" + a2] && delar.length === 3) {
+      html = vyUppgift(B.uppgifter[a1 + "-" + a2], bankKontext(tentaMap[a1]));
+    }
     else html = vyHittadesInte();
 
     app.innerHTML = html;
@@ -234,7 +332,12 @@
       else a.removeAttribute("aria-current");
     });
     renderaSidfot();
-    window.scrollTo(0, 0);
+    const mal = rullaTill && document.getElementById(rullaTill);
+    // Vid utfällning: behåll scrollläget om avsnittet redan syns, annars rulla dit.
+    if (mal) {
+      const r = mal.getBoundingClientRect();
+      if (r.top < 0 || r.top > window.innerHeight * 0.6) mal.scrollIntoView({ block: "start" });
+    } else window.scrollTo(0, 0);
   }
 
   // ---------- Sidfot: säkerhetskopia av status ----------

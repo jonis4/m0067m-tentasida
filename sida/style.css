@@ -217,3 +217,59 @@ button.knapp {
 }
 button.knapp:hover { background: var(--svag); }
 .uppgift > .kalla { margin-top: 2.2rem; }
+
+/* ---------- Kapitel ---------- */
+.forklaring { font-size: 0.88rem; margin: -1rem 0 1.6rem; }
+.kapitellista { list-style: none; margin: 0; padding: 0; }
+.kapitelrad {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 0.6rem;
+  margin: 0 -0.6rem;
+  text-decoration: none;
+  border-radius: 6px;
+}
+a.kapitelrad:hover { background: var(--yta); }
+.kapitel.oppen > .kapitelrad { font-weight: 600; }
+.kapitel.tomt .kapitelrad { color: var(--tyst); }
+.avsnitt-nr { width: 2.2rem; flex: none; color: var(--tyst); font-variant-numeric: tabular-nums; }
+.kapitel.oppen .avsnitt-nr { color: var(--text); }
+.kapitelrad .rad-namn { min-width: 0; }
+.antal { width: 2.6rem; text-align: right; flex: none; }
+
+/* Stapeln: accentfärgen betyder "det du klarat". */
+.stapel {
+  flex: none;
+  width: 7rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--svag);
+  overflow: hidden;
+}
+.stapel > span { display: block; height: 100%; background: var(--accent); }
+
+.utfallt { padding: 0.4rem 0 1.8rem 2.6rem; }
+.utfallt h3.del { margin: 1.4rem 0 0.2rem; }
+.utfallt .rader a { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+h3.del {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tyst);
+}
+.knapp-stor {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.7rem 1.2rem;
+  background: var(--yta);
+  border-radius: 8px;
+  text-decoration: none;
+}
+.knapp-stor:hover { background: var(--svag); }
+
+@media (max-width: 560px) {
+  .stapel { width: 4rem; }
+  .utfallt { padding-left: 0; }
+}
