@@ -443,6 +443,7 @@
       + '<p class="meta">' + u.poang + " p · " + (u.del === "G" ? "del för godkänt" : "del för högre betyg")
       + (genomgang ? " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) : "") + "</p></header>"
       + '<div class="text">' + Format.formatera(u.uppgift, tenta.pdf[0], id + " uppgift") + "</div>"
+      + (genomgang ? kopieraKnapp(u, true) : "")
       + losning
       + '<nav class="nasta">' + (i > 0 ? '<a href="' + href(i - 1) + '" data-ersatt>← Föregående</a>' : "<span></span>") + nastaLank + "</nav>"
       + "</article>";
@@ -630,6 +631,7 @@
       + '<span title="' + (u.del === "G" ? "Del för godkänt" : "Del för högre betyg") + '">' + u.del + "</span>"
       + " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) + "</p></header>"
       + '<div class="text">' + Format.formatera(u.uppgift, figurPdfUppgift, kalla + " uppgift") + "</div>"
+      + kopieraKnapp(u, false)
       + '<section class="losning">' + losning + "</section>"
       + '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
       + '<div class="statusvalen">' + statusKnappar(u.id) + "</div></section>"
@@ -652,11 +654,58 @@
         }
         ruta.hidden = visas;
         knapp.setAttribute("aria-expanded", String(!visas));
+        const kk = app.querySelector(".kopiera");
+        if (kk) { kk.dataset.medLosning = visas ? "0" : "1"; kk.textContent = visas ? "Kopiera uppgiften" : "Kopiera uppgift och lösning"; }
         knapp.textContent = visas ? "Visa lösningsförslag" : "Dölj lösningsförslag";
       });
     });
     return html;
   }
+
+  // Text att klistra in i en AI: källa, typ, avsnitt och uppgiften (och lösningen om den är öppnad), med LaTeX.
+  function kopieraText(u, medLosning) {
+    const t = tentaMap[u.tenta];
+    const rader = [
+      "Kurs: M0067M Linjär algebra (LTU), kursbok Anton & Rorres. Matten är skriven i LaTeX.",
+      "Källa: " + t.namn + ", uppgift " + u.nr + " (" + u.poang + " p, " + (u.del === "G" ? "del för godkänt" : "del för högre betyg") + ").",
+      "Typ: " + B.typer[u.typ].namn + ". Avsnitt: " + u.avsnitt.join(", ") + ".",
+      "",
+      "Uppgift:",
+      u.uppgift,
+    ];
+    if (medLosning && u.losning) rader.push("", "Lösningsförslag (examinatorns):", u.losning);
+    return rader.join("\n");
+  }
+
+  function kopieraKnapp(u, medLosning) {
+    return '<p class="kopiera-rad"><button type="button" class="lank kopiera" data-kopiera="' + u.id + '" data-med-losning="' + (medLosning ? 1 : 0) + '">'
+      + (medLosning && u.losning ? "Kopiera uppgift och lösning" : "Kopiera uppgiften") + "</button></p>";
+  }
+
+  async function kopiera(knapp) {
+    const u = B.uppgifter[knapp.dataset.kopiera];
+    const text = kopieraText(u, knapp.dataset.medLosning === "1");
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      // Reserv om Clipboard API inte är tillgängligt.
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+      ta.remove();
+    }
+    const etikett = knapp.textContent;
+    knapp.textContent = ok ? "Kopierat" : "Kunde inte kopiera";
+    setTimeout(() => { if (knapp.isConnected) knapp.textContent = etikett; }, 1600);
+  }
+
+  document.addEventListener("click", (e) => {
+    const k = e.target.closest("[data-kopiera]");
+    if (k) kopiera(k);
+  });
 
   function bankKontext(tenta) {
     return {
@@ -728,6 +777,7 @@
     else if (vy === "idag" && a1 === "schema" && delar.length === 2) html = vySchema();
     else if (vy === "idag" && a1 === "repetera" && B.uppgifter[a2] && delar.length === 3) html = vyUppgift(B.uppgifter[a2], repeteraKontext(a2));
     else if (vy === "strategi" && delar.length === 1) html = vyStrategi();
+    else if (vy === "installningar" && delar.length === 1) html = vyInstallningar();
     else if (vy === "idag" && dagMap[a1] && delar.length === 2) html = vyIdag(a1);
     else if (vy === "idag" && dagMap[a1] && delar.length === 4 && dagMap[a1].pass
       && dagMap[a1].pass[+a2 - 1] && dagMap[a1].pass[+a2 - 1].uppgifter.includes(delar[3])) {
@@ -766,35 +816,51 @@
   const sidfot = document.getElementById("sidfot");
   let sidfotLage = null; // null | { typ: "import", granskning } | { typ: "rensa" } | { typ: "meddelande", text }
 
+  // Sidfoten är en enda rad (layoutspec §2 och §7). Bara sådant som kräver handling visas därutöver.
   function renderaSidfot() {
+    let varning = "";
+    if (!Status.sparbar) varning += "<p><strong>Statusen kan inte sparas i den här webbläsaren.</strong> Exportera under Inställningar innan du stänger fliken.</p>";
+    if (Sparfil.stod && (Sparfil.lage === "behover-ok" || Sparfil.lage === "fel")) varning += sparfilRad();
+    sidfot.innerHTML = varning + '<p><a href="#/strategi">Strategi</a> · <a href="#/installningar">Inställningar</a></p>';
+    const instEl = document.getElementById("installningar");
+    if (instEl) instEl.innerHTML = installningarInnehall();
+  }
+
+  function installningarInnehall() {
     const n = Status.antal();
-    let html;
+    let status;
     if (sidfotLage && sidfotLage.typ === "import") {
-      html = "<p>Filen innehåller status för " + sidfotLage.granskning.antal + " uppgifter. Den ersätter nuvarande status ("
+      status = "<p>Filen innehåller status för " + sidfotLage.granskning.antal + " uppgifter. Den ersätter nuvarande status ("
         + n + " uppgifter).</p>"
         + '<p><button type="button" class="knapp" data-sidfot="importera-ok">Importera</button> '
         + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
     } else if (sidfotLage && sidfotLage.typ === "rensa") {
-      html = "<p>Rensa status för alla " + n + " uppgifter?</p>"
+      status = "<p>Rensa status för alla " + n + " uppgifter?</p>"
         + '<p><button type="button" class="knapp" data-sidfot="rensa-ok">Rensa</button> '
         + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
     } else {
-      html = (Status.sparbar ? "" : "<p><strong>Statusen kan inte sparas i den här webbläsaren.</strong> Exportera innan du stänger fliken.</p>")
-        + (sidfotLage && sidfotLage.typ === "meddelande"
-          ? "<p>" + esc(sidfotLage.text)
+      status = (sidfotLage && sidfotLage.typ === "meddelande"
+          ? '<p class="meddelande">' + esc(sidfotLage.text)
             + (sidfotLage.angra ? ' <button type="button" class="lank" data-sidfot="angra">Ångra</button>' : "") + "</p>"
           : "")
-        + "<p>Status: " + n + " av " + Object.keys(B.uppgifter).length + " uppgifter · "
-        + '<button type="button" class="lank" data-sidfot="exportera">Exportera</button> · '
+        + '<p class="tyst">Status för ' + n + " av " + Object.keys(B.uppgifter).length + " uppgifter sparas i webbläsaren.</p>"
+        + '<p><button type="button" class="lank" data-sidfot="exportera">Exportera</button> · '
         + '<button type="button" class="lank" data-sidfot="importera">Importera</button> · '
         + '<button type="button" class="lank" data-sidfot="rensa">Rensa</button></p>'
-        + sparfilRad()
-        + '<p><a href="#/strategi">Strategi</a> · Strategirader ' + (inst.strategi ? "på" : "av")
-        + ' · <button type="button" class="lank" data-sidfot="strategi-vaxla">' + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p>"
-        + temaRad()
-        + schemaRad();
+        + sparfilRad();
     }
-    sidfot.innerHTML = html;
+    return '<section class="installning"><h2 class="del">Status</h2>' + status + "</section>"
+      + (Object.keys(SCHEMOR).length ? '<section class="installning"><h2 class="del">Schema</h2>' + schemaRad() + "</section>" : "")
+      + '<section class="installning"><h2 class="del">Tema</h2>' + temaRad() + "</section>"
+      + '<section class="installning"><h2 class="del">Strategirader</h2>'
+      + '<p class="tyst">Korta tips ur <em>A Mind for Numbers</em> där de behövs. Alla block finns under <a href="#/strategi">Strategi</a>.</p>'
+      + "<p>" + (inst.strategi ? "På" : "Av") + ' · <button type="button" class="lank" data-sidfot="strategi-vaxla">'
+      + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p></section>";
+  }
+
+  function vyInstallningar() {
+    document.title = "Inställningar · M0067M";
+    return kontextrad("#/idag", "") + "<h1>Inställningar</h1>" + '<div id="installningar">' + installningarInnehall() + "</div>";
   }
 
   function sparfilRad() {
@@ -812,14 +878,15 @@
         return "<p><strong>Kunde inte spara till " + namn + ".</strong> "
           + '<button type="button" class="lank" data-sidfot="sparfil-valj">Välj fil igen</button>' + sluta + "</p>";
       default:
-        return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Spara automatiskt till fil…</button></p>';
+        return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Spara automatiskt till fil…</button>'
+          + ' <span class="tyst">(varje ändring skrivs till en fil du väljer)</span></p>';
     }
   }
 
   function temaRad() {
     let tema = "auto";
     try { tema = localStorage.getItem("m0067m.tema") || "auto"; } catch (e) { /* auto */ }
-    return "<p>Tema: " + [["auto", "Auto"], ["light", "Ljust"], ["dark", "Mörkt"]].map(([k, namn]) =>
+    return "<p>" + [["auto", "Auto (följer datorn)"], ["light", "Ljust"], ["dark", "Mörkt"]].map(([k, namn]) =>
       '<button type="button" class="lank tema-val" data-sidfot="tema:' + k + '" aria-pressed="' + (k === tema) + '">' + namn + "</button>")
       .join(" · ") + "</p>";
   }
@@ -828,10 +895,11 @@
     const nycklar = Object.keys(SCHEMOR);
     if (!nycklar.length) return "";
     if (valtSchema) {
-      return "<p>" + esc(S.namn) + ' används · <button type="button" class="lank" data-sidfot="schema:">Byt till '
+      return "<p>Du använder " + esc(S.namn) + '. <button type="button" class="lank" data-sidfot="schema:">Byt till '
         + esc(window.SCHEMA.namn || "standardschemat") + "</button></p>";
     }
-    return "<p>" + nycklar.map((k) => '<button type="button" class="lank" data-sidfot="schema:' + k + '">Importera '
+    return '<p class="tyst">Du använder ' + esc(window.SCHEMA.namn || "standardschemat") + ".</p><p>"
+      + nycklar.map((k) => '<button type="button" class="lank" data-sidfot="schema:' + k + '">Importera '
       + esc(SCHEMOR[k].namn) + "</button>").join(" · ") + "</p>";
   }
 
@@ -919,6 +987,7 @@
     const statusar = Object.keys(Status.STATUSAR);
     if (e.key === "ArrowLeft" && tangentKontext.forra) ga(tangentKontext.forra, { ersatt: true });
     else if (e.key === "ArrowRight" && tangentKontext.nasta) ga(tangentKontext.nasta, { ersatt: true });
+    else if ((e.key === "k" || e.key === "K") && app.querySelector(".kopiera")) kopiera(app.querySelector(".kopiera"));
     else if (e.key === "l" || e.key === "L") {
       const k = app.querySelector(".visa-losning");
       if (!k) return;

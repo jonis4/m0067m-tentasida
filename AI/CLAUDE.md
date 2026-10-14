@@ -292,8 +292,10 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Fas 8: större klickytor på pekskärm/smal skärm (`@media (pointer: coarse), (max-width: 560px)`), och uppgiftsrader på två rader på mobil. Ingen sidledsscroll på 320/390 px.
 - Tema: sidfoten har Auto/Ljust/Mörkt (localStorage `m0067m.tema` → `data-theme` på `<html>`, sätts i `<head>` innan sidan ritas).
 - Flera scheman: `data/schema.json` (Jonatans, standard) + `data/schema-<namn>.json` (t.ex. `schema-erik.json`, Jonatans kompis Erik). `build.py` validerar alla och skriver `window.SCHEMA` + `window.SCHEMOR`. Sidfoten visar "Importera Eriks schema", och valet sparas i localStorage `m0067m.schema` och laddar om sidan. Eriks schema: start 19 okt, 2–3 h/dag varje dag, betyg 3, inga bevis, diag 1–2 först (svag på kap 1–4), tentor t260319 (22 okt) och t260827 (24 okt).
+- Efter fas 8: sidfoten är en enda rad, "Strategi · Inställningar". Där visas bara det som kräver handling (sparfil behöver klick eller har fel, localStorage blockerat). Status-backup, sparfil, schema, tema och strategirader ligger på `#/installningar`. Detta löser också "Status x av 81"-frågan.
+- "Kopiera uppgiften" (även tangent K) under uppgiftstexten kopierar kurs, källa, typ, avsnitt och uppgiften ordagrant med LaTeX, för att klistra in i en AI. Är lösningen öppnad heter knappen "Kopiera uppgift och lösning" och tar med lösningen. Knappen finns inte under tentan, men i genomgången.
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**
 - Ska sidan finnas på mobilen via GitHub Pages (Jonatan slår på det i repots inställningar)? Inte besvarat.
-- Avvikelser från layoutspecen (fas 8) är visade men inte kommenterade: sortering överst i Kapitel, tre klick via Bank/Kapitel, ingen "Har du räknat klart?", "Status: x av 81" i sidfoten.
+- Avvikelser från layoutspecen (fas 8) är visade men inte kommenterade: sortering överst i Kapitel, tre klick via Bank/Kapitel, ingen "Har du räknat klart?".
