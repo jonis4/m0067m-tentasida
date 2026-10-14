@@ -24,6 +24,27 @@
       for (const a of u.avsnitt) perAvsnitt[a][u.typ === "bevis" ? "bevis" : "ovning"].push(id);
     }
   }
+  // ---------- Schema och datum ----------
+  const S = window.SCHEMA;
+  const dagMap = Object.fromEntries(S.dagar.map((d) => [d.datum, d]));
+  const VECKODAG = ["Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag"];
+  const MANAD = ["jan", "feb", "mars", "april", "maj", "juni", "juli", "aug", "sep", "okt", "nov", "dec"];
+  const tvaSiffror = (n) => String(n).padStart(2, "0");
+  const isoAv = (d) => d.getFullYear() + "-" + tvaSiffror(d.getMonth() + 1) + "-" + tvaSiffror(d.getDate());
+  const datumAv = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+  const plusDagar = (iso, n) => { const d = datumAv(iso); d.setDate(d.getDate() + n); return isoAv(d); };
+  const dagarMellan = (a, b) => Math.round((datumAv(b) - datumAv(a)) / 864e5);
+  const datumText = (iso) => { const d = datumAv(iso); return VECKODAG[d.getDay()] + " " + d.getDate() + " " + MANAD[d.getMonth()]; };
+  // window.IDAG_DATUM finns bara för att testerna ska kunna låtsas att det är en annan dag.
+  const idagIso = () => window.IDAG_DATUM || isoAv(new Date());
+  const forstaDag = S.dagar[0].datum;
+
+  function passBeskrivning(ps) {
+    if (ps.beskrivning) return ps.beskrivning;
+    const typer = [...new Set(ps.uppgifter.map((id) => B.typer[B.uppgifter[id].typ].namn.toLowerCase()))];
+    return "Blandat: " + typer.join(" · ");
+  }
+
   const klarad = (id) => { const s = Status.get(id); return !!s && (s.status === "sjalv" || s.status === "sitter"); };
 
   // ---------- Historik: så att "Tillbaka" går dit man kom ifrån ----------
@@ -93,10 +114,95 @@
   }
 
   // ---------- Vyer ----------
-  function vyIdag() {
-    document.title = "Idag · M0067M";
-    return '<h1>Idag</h1><p class="tyst">Här kommer dagens pass när schemat är klart. Tills vidare finns allt i '
-      + '<a href="#/bank">Bank →</a></p>';
+  function vyIdag(visad) {
+    const idag = idagIso();
+    const fore = idag < forstaDag;
+    if (!visad) {
+      if (idag > S.tentadatum) {
+        document.title = "Idag · M0067M";
+        return '<h1>Tentan har varit</h1><p class="tyst"><a href="#/idag/schema">Visa hela schemat</a></p>';
+      }
+      visad = fore ? forstaDag : idag;
+    }
+    const dag = dagMap[visad];
+    document.title = datumText(visad) + " · M0067M";
+    const kvar = dagarMellan(visad, S.tentadatum);
+    const forra = plusDagar(visad, -1), nasta = plusDagar(visad, 1);
+    const pil = (iso, tecken, namn) => dagMap[iso]
+      ? '<a class="dagpil" href="#/idag/' + iso + '" data-ersatt aria-label="' + namn + '">' + tecken + "</a>"
+      : '<span class="dagpil av" aria-hidden="true">' + tecken + "</span>";
+
+    let html = '<div class="daghuvud">' + pil(forra, "←", "Föregående dag")
+      + "<h1>" + datumText(visad) + "</h1>" + pil(nasta, "→", "Nästa dag")
+      + '<span class="kvar">' + (kvar > 0 ? kvar + (kvar === 1 ? " dag kvar" : " dagar kvar") : kvar === 0 ? "Tentadag" : "") + "</span></div>";
+
+    if (visad !== idag) {
+      html += '<p class="tyst annan-dag">' + (fore && visad === forstaDag ? "Schemat börjar " + datumText(forstaDag).toLowerCase() + "." : "Du tittar på en annan dag än idag.")
+        + (dagMap[idag] ? ' <a href="#/idag" data-ersatt>Till idag</a>' : "") + "</p>";
+    }
+
+    if (!dag) {
+      html += '<p class="tyst">Inget inlagt den här dagen.</p>';
+    } else if (dag.notis) {
+      html += '<p class="notis">' + esc(dag.notis) + "</p>";
+    } else {
+      dag.pass.forEach((ps, i) => {
+        const nr = i + 1;
+        const rader = ps.uppgifter.map((id) => {
+          const u = B.uppgifter[id];
+          return '<li><a href="#/idag/' + visad + "/" + nr + "/" + id + '">'
+            + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
+            + statusEtikett(id)
+            + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
+            + '<span class="pil" aria-hidden="true">→</span></a></li>';
+        }).join("");
+        const forsta = ps.uppgifter.find((id) => !klarad(id)) || ps.uppgifter[0];
+        html += '<section class="pass"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
+          + '<p class="pass-beskrivning">' + esc(passBeskrivning(ps)) + "</p>"
+          + (rader ? '<ul class="rader">' + rader + "</ul>" : "")
+          + (forsta ? '<p><a class="knapp-stor" href="#/idag/' + visad + "/" + nr + "/" + forsta + '">Starta</a></p>' : "")
+          + "</section>";
+      });
+    }
+    return html + '<p class="hela-schemat"><a href="#/idag/schema">Visa hela schemat</a></p>';
+  }
+
+  function vySchema() {
+    document.title = "Schema · M0067M";
+    const idag = idagIso();
+    const rader = S.dagar.map((d) => {
+      let sammanfattning;
+      if (d.notis) sammanfattning = esc(d.notis);
+      else {
+        const ids = [...new Set(d.pass.flatMap((ps) => ps.uppgifter))];
+        // En kort rad per pass: tentapass får tentans namn, vanliga pass sin beskrivning.
+        const kort = (ps) => ps.tenta ? ps.rubrik + ": " + tentaMap[ps.tenta].namn
+          : !ps.beskrivning ? passBeskrivning(ps)
+          : /^(Pass \d+|Morgonpass)$/.test(ps.rubrik) ? ps.beskrivning
+          : ps.rubrik;
+        sammanfattning = d.pass.map((ps) => esc(kort(ps))).join("<br>")
+          + (ids.length ? ' <span class="tyst">· ' + Status.antalGjorda(ids) + "/" + ids.length + " gjorda</span>" : "");
+      }
+      const ar = d.datum === idag;
+      return '<li' + (ar ? ' class="idag"' : "") + '><a href="#/idag/' + d.datum + '">'
+        + '<span class="schema-datum">' + datumText(d.datum) + (ar ? ' <span class="nu">idag</span>' : "") + "</span>"
+        + '<span class="schema-innehall">' + sammanfattning + "</span></a></li>";
+    }).join("");
+    return kontextrad("#/idag", "") + "<h1>Hela schemat</h1>"
+      + '<p class="tyst">' + datumText(S.dagar[0].datum) + " – " + datumText(S.tentadatum).toLowerCase() + "</p>"
+      + '<ul class="schemalista">' + rader + "</ul>";
+  }
+
+  function idagKontext(datum, nr) {
+    const ps = dagMap[datum].pass[nr - 1];
+    return {
+      ids: ps.uppgifter,
+      href: (id) => "#/idag/" + datum + "/" + nr + "/" + id,
+      foralder: "#/idag/" + datum,
+      foralderNamn: datumText(datum) + " · " + ps.rubrik,
+      sistaText: "Tillbaka till dagen",
+      visaKalla: true,
+    };
   }
 
   const SORTERING = [["ordning", "Ordning"], ["svagast", "Svagast först"]];
@@ -310,7 +416,13 @@
     const [vy, a1, a2] = delar;
     tangentKontext = null;
     let html, rullaTill = null;
-    if (vy === "idag" && delar.length === 1) html = vyIdag();
+    if (vy === "idag" && delar.length === 1) html = vyIdag(null);
+    else if (vy === "idag" && a1 === "schema" && delar.length === 2) html = vySchema();
+    else if (vy === "idag" && dagMap[a1] && delar.length === 2) html = vyIdag(a1);
+    else if (vy === "idag" && dagMap[a1] && delar.length === 4 && dagMap[a1].pass
+      && dagMap[a1].pass[+a2 - 1] && dagMap[a1].pass[+a2 - 1].uppgifter.includes(delar[3])) {
+      html = vyUppgift(B.uppgifter[delar[3]], idagKontext(a1, +a2));
+    }
     else if (vy === "kapitel" && delar.length === 1) html = vyKapitel(q, null);
     else if (vy === "kapitel" && perAvsnitt[a1] && delar.length === 2) {
       html = vyKapitel(q, a1);

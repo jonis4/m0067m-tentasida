@@ -9,6 +9,7 @@ Källfilen ändras aldrig. Om valideringen hittar fel skrivs ingen bank.js och s
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 SIDA = Path(__file__).resolve().parent
@@ -16,6 +17,8 @@ ROT = SIDA.parent
 KALLA = ROT / "AI" / "M0067M_kunskapsbas.md"
 MAPPNING = SIDA / "data" / "mappning.json"
 UT = SIDA / "data" / "bank.js"
+SCHEMA = SIDA / "data" / "schema.json"
+SCHEMA_UT = SIDA / "data" / "schema.js"
 
 SAKNAS = "*Lösningsförslag saknas i materialet.*"
 TYPORDNING = ["tenta", "ovningstenta", "diagnos"]
@@ -141,6 +144,42 @@ def validera(tentor, uppgifter, mappning):
     return fel, utan_losning
 
 
+def validera_schema(schema, uppgifter, tentor):
+    """Kontrollerar att schemat bara pekar på uppgifter och tentor som finns."""
+    fel = []
+    ids = {u["id"] for u in uppgifter}
+    tenta_ids = {t["id"] for t in tentor}
+    try:
+        tentadag = date.fromisoformat(schema["tentadatum"])
+    except (KeyError, ValueError):
+        return ["schema: ogiltigt eller saknat tentadatum"]
+    datum = []
+    for dag in schema.get("dagar", []):
+        try:
+            d = date.fromisoformat(dag["datum"])
+        except (KeyError, ValueError):
+            fel.append(f"schema: ogiltigt datum {dag.get('datum')!r}")
+            continue
+        datum.append(d)
+        if d > tentadag:
+            fel.append(f"schema {d}: efter tentadatum")
+        if not dag.get("pass") and not dag.get("notis"):
+            fel.append(f"schema {d}: dagen har varken pass eller notis")
+        for i, ps in enumerate(dag.get("pass", []), 1):
+            if not ps.get("rubrik"):
+                fel.append(f"schema {d} pass {i}: saknar rubrik")
+            if not ps.get("uppgifter") and not ps.get("beskrivning"):
+                fel.append(f"schema {d} pass {i}: saknar både uppgifter och beskrivning")
+            for uid in ps.get("uppgifter", []):
+                if uid not in ids:
+                    fel.append(f"schema {d} pass {i}: okänd uppgift {uid!r}")
+            if "tenta" in ps and ps["tenta"] not in tenta_ids:
+                fel.append(f"schema {d} pass {i}: okänd tenta {ps['tenta']!r}")
+    if datum != sorted(datum) or len(set(datum)) != len(datum):
+        fel.append("schema: dagarna måste ligga i datumordning utan dubbletter")
+    return fel
+
+
 def bygg_bank(tentor, uppgifter, mappning):
     tentor_ut = []
     for t in tentor:
@@ -181,6 +220,8 @@ def main():
     mappning = json.loads(MAPPNING.read_text(encoding="utf-8"))
     tentor, uppgifter = parsa(KALLA.read_text(encoding="utf-8"))
     fel, utan_losning = validera(tentor, uppgifter, mappning)
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    fel += validera_schema(schema, uppgifter, tentor)
 
     if fel:
         print(f"VALIDERING MISSLYCKADES ({len(fel)} fel):")
@@ -191,6 +232,10 @@ def main():
     bank = bygg_bank(tentor, uppgifter, mappning)
     UT.write_text("// Genererad av build.py. Redigera inte för hand.\nwindow.BANK = "
                   + json.dumps(bank, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
+
+    schema_ut = {k: v for k, v in schema.items() if not k.startswith("_")}
+    SCHEMA_UT.write_text("// Genererad av build.py från schema.json. Redigera schema.json, inte den här filen.\nwindow.SCHEMA = "
+                         + json.dumps(schema_ut, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
 
     alla_text = [u["uppgift"] + "\n" + (u["losning"] or "") for u in uppgifter]
     per_typ = {}
@@ -205,7 +250,10 @@ def main():
     print(f"  Transkr.-noter:    {sum(t.count('Transkriberarens not') for t in alla_text)}")
     print(f"  Undantag använda:  {len(mappning['undantag'])}")
     print("  Per typ:          " + ", ".join(f"{k} {v}" for k, v in sorted(per_typ.items(), key=lambda kv: -kv[1])))
-    print(f"Skrev {UT.relative_to(ROT)} ({UT.stat().st_size // 1024} kB)")
+    antal_pass = sum(len(d.get("pass", [])) for d in schema["dagar"])
+    i_schema = {uid for d in schema["dagar"] for ps in d.get("pass", []) for uid in ps.get("uppgifter", [])}
+    print(f"  Schema:            {len(schema['dagar'])} dagar, {antal_pass} pass, {len(i_schema)} olika uppgifter")
+    print(f"Skrev {UT.relative_to(ROT)} ({UT.stat().st_size // 1024} kB) och {SCHEMA_UT.relative_to(ROT)}")
 
     if "--tabell" in sys.argv:
         skriv_tabell(uppgifter, mappning)

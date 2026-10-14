@@ -263,7 +263,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - [x] Fas 2 – Skal, Bank och uppgiftsvy
 - [x] Fas 3 – Status
 - [x] Fas 4 – Kapitel (utan planeringsappen, se Beslut)
-- [ ] Fas 5 – Schema och Idag
+- [x] Fas 5 – Schema och Idag
 - [ ] Fas 6 – Tentaläge
 - [ ] Fas 7 – Strategi, Repetera och examinatormallar
 - [ ] Fas 8 – Finslipning
@@ -286,6 +286,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - **Fas 4: planeringsappen kopplas INTE in** (Jonatans beslut). Den ligger i `C:\Users\jonat\Desktop\matte schema\` och får **bara läsas, aldrig ändras**. Jonatan använder den för repetition, och tentasidan för tentaplugg.
 - Kapitel bygger i stället på tentauppgifterna: stapeln = andel av avsnittets uppgifter (utom bevis) med status `sjalv` eller `sitter`. Sortering: Ordning / Svagast först (flikarna ligger överst, inte längst ner som i specen). Rutter: `#/kapitel`, `#/kapitel/1.4`, `#/kapitel/1.4/<uppgift-id>`. Avsnittsnamnen i `mappning.json` är bokens titlar.
 - Fas 5: "säkerheten per kapitel från planeringsappen" ersätts av Kapitel-staplarna och det Jonatan själv säger.
+- Fas 5: schemat är godkänt (14 okt, reviderat: start 15 okt, läs 6.5 först) och ligger i `sida/data/schema.json`. `build.py` validerar det och skriver `data/schema.js`. Jonatan pluggar 2–3 h på vardagar, ett morgonpass per helg, siktar på betyg 3 (kanske 4). Hela tentor = del G (uppg. 1–6) på 3 h, t260319 den 20 okt och t260827 den 23 okt. Bevis och diag3 är inte med i schemat. Rutter: `#/idag`, `#/idag/<datum>`, `#/idag/<datum>/<pass>/<uppgift-id>`, `#/idag/schema`. `window.IDAG_DATUM` kan sättas i tester för att låtsas att det är en annan dag.
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**

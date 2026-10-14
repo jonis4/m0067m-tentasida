@@ -273,3 +273,42 @@ h3.del {
   .stapel { width: 4rem; }
   .utfallt { padding-left: 0; }
 }
+
+/* ---------- Idag ---------- */
+.daghuvud { display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 0.4rem; }
+.daghuvud h1 { margin: 0; }
+.dagpil { color: var(--tyst); text-decoration: none; font-size: 1.2rem; padding: 0 0.3rem; }
+.dagpil:hover { color: var(--text); }
+.dagpil.av { opacity: 0.3; }
+.kvar { margin-left: auto; color: var(--tyst); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.annan-dag { font-size: 0.9rem; margin: 0.2rem 0 0; }
+.notis { font-size: 1.1rem; margin-top: 2.4rem; }
+.pass { margin-top: 2.6rem; }
+.pass h2.del { margin-top: 0; }
+.pass-beskrivning { margin: 0.2rem 0 0.6rem; }
+.pass .knapp-stor { margin-top: 0.6rem; }
+.hela-schemat { margin-top: 3rem; font-size: 0.92rem; color: var(--tyst); }
+
+/* ---------- Hela schemat ---------- */
+.schemalista { list-style: none; margin: 2rem 0 0; padding: 0; }
+.schemalista a {
+  display: flex;
+  gap: 1.4rem;
+  padding: 0.7rem 0.6rem;
+  margin: 0 -0.6rem;
+  text-decoration: none;
+  border-radius: 6px;
+}
+.schemalista a:hover { background: var(--yta); }
+.schema-datum { flex: none; width: 9.5rem; }
+.schema-innehall { color: var(--tyst); }
+.schemalista .idag .schema-datum { font-weight: 600; }
+/* Accentfärgen: "nu". */
+.nu { color: var(--accent); font-size: 0.82rem; font-weight: 600; margin-left: 0.3rem; }
+
+@media (max-width: 560px) {
+  .daghuvud { flex-wrap: wrap; }
+  .daghuvud h1 { font-size: 1.35rem; }
+  .kvar { width: 100%; margin-left: 0; }
+  .schemalista a { flex-direction: column; gap: 0.1rem; }
+}
