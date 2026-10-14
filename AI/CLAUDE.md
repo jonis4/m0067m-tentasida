@@ -281,7 +281,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Breda displayformler (`.formel`) får gå bredare än textspalten (upp till 74rem).
 - Ej byggt än: [Skriv som tenta] (fas 6), statusval (fas 3), "Har du räknat klart?"-friktion (valfri, §5).
 - Verifiering: headless Edge + puppeteer-core (testskript i scratchpad, inte i projektet).
-- Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:er och `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore` och stannar lokalt. `gh` finns inte installerat.
+- Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**
 - Var ligger planeringsappen, och i vilket format är datan? (fas 4)
