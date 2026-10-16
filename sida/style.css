@@ -505,3 +505,11 @@ details.pass.hopfallt .rader { opacity: 1; }
   button.visa-losning.lank, button.visa-losning.lank:hover, .kopiera-rad .lank { display: inline-block; padding: 0.65rem 0; }
   .kopiera-rad { margin-top: 0; }
 }
+
+/* Hjälpen på små skärmar: tätare så att den ryms utan att täcka allt */
+@media (max-width: 560px) {
+  dialog.hjalp { padding: 1.1rem 1.2rem 0.6rem; font-size: 0.92rem; line-height: 1.45; }
+  dialog.hjalp h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+  dialog.hjalp li { margin-bottom: 0.3rem; }
+  dialog.hjalp .knapp-stor { margin-top: 0.2rem; padding: 0.6rem 1.1rem; }
+}

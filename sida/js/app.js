@@ -1037,18 +1037,17 @@
     const scheman = Object.keys(SCHEMOR).length
       ? "<li><strong>Schema:</strong> du använder " + esc(S.namn) + ". "
         + Object.values(SCHEMOR).concat([window.SCHEMA]).filter((x) => x !== S).map((x) => esc(x.namn)).join(" och ")
-        + " finns också. Byt under Inställningar.</li>"
+        + " finns också, under Inställningar.</li>"
       : "";
     return '<h2 id="hjalp-rubrik">Så funkar sidan</h2><ul>'
-      + "<li><strong>Idag</strong> visar passet du ska göra nu. Tryck <em>Starta</em> och räkna. Passen blandar uppgiftstyper med flit, "
-      + "och sist i dagens sista pass ligger en repetition av något du gjort för några dagar sedan.</li>"
+      + "<li><strong>Idag:</strong> passet du ska göra nu. Sist ligger en repetition.</li>"
       + scheman
-      + "<li><strong>Bank</strong> har alla 81 uppgifter: 3 gamla tentor, 3 övningstentor och 3 diagnoser.</li>"
-      + "<li><strong>Kapitel</strong> visar uppgifterna per avsnitt och hur mycket du klarat.</li>"
-      + "<li><strong>Lösningen är dold</strong> tills du klickar. Markera sedan hur det gick: med hjälp, själv eller sitter.</li>"
-      + "<li><strong>Tentaläge:</strong> <em>Skriv som tenta</em> i Bank. Timer, formelblad och inga lösningar förrän du lämnar in.</li>"
-      + "<li><strong>Kopiera uppgiften</strong> under varje uppgift, för att klistra in i en AI.</li>"
-      + "<li>Allt sparas automatiskt i webbläsaren.</li>"
+      + "<li><strong>Bank:</strong> alla 81 uppgifter från 9 tentor.</li>"
+      + "<li><strong>Kapitel:</strong> uppgifterna per avsnitt.</li>"
+      + "<li><strong>Lösningen är dold</strong> tills du klickar. Markera sedan hur det gick.</li>"
+      + "<li><strong>Tentaläge:</strong> <em>Skriv som tenta</em> i Bank.</li>"
+      + "<li><strong>Kopiera uppgiften</strong> för att fråga en AI.</li>"
+      + "<li>Allt sparas automatiskt.</li>"
       + '</ul><p><button type="button" class="knapp-stor" data-hjalp-stang>Kom igång</button></p>';
   }
 
