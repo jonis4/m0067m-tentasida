@@ -295,7 +295,7 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Efter fas 8: sidfoten är en enda rad, "Strategi · Inställningar". Där visas bara det som kräver handling (sparfil behöver klick eller har fel, localStorage blockerat). Status-backup, sparfil, schema, tema och strategirader ligger på `#/installningar`. Detta löser också "Status x av 81"-frågan.
 - "Kopiera uppgiften" (även tangent K) under uppgiftstexten kopierar kurs, källa, typ, avsnitt och uppgiften ordagrant med LaTeX, för att klistra in i en AI. Är lösningen öppnad heter knappen "Kopiera uppgift och lösning" och tar med lösningen. Knappen finns inte under tentan, men i genomgången.
 - Hjälpfönster (`<dialog id="hjalp">`): visas första gången (localStorage `m0067m.hjalp.sedd`), inte i tentaläget, och öppnas igen med "Hjälp" i sidfoten. Kortfattat (8 punkter), och nämner vilket schema som används. Testerna sätter `window.INGEN_HJALP = true` för att slippa det. Idag visar en liten rad "<schemanamn> · Byt schema" när det finns flera scheman.
-- Hosting: `tentor/index.html` skickar vidare till `sida/index.html`, och `.nojekyll` gör att GitHub Pages publicerar filerna orörda. Tänkt adress: https://jonis4.github.io/m0067m-tentasida/ (Jonatan slår på Pages i repots inställningar).
+- Hosting: `tentor/index.html` skickar vidare till `sida/index.html`, och `.nojekyll` gör att GitHub Pages publicerar filerna orörda. **GitHub Pages är påslaget (16 okt):** https://jonis4.github.io/m0067m-tentasida/. Den publicerade versionen är kontrollerad: matte, PDF:er och hjälp fungerar. Varje push publiceras automatiskt inom någon minut.
 - UX-genomgång (16 okt), punkt 2–6 genomförda, punkt 1 (dölja typ/avsnitt före lösning) inte vald:
   - "Visa lösningsförslag" är en textknapp, och strategiraden "Illusioner av kompetens" står före klicket. "Nästa uppgift →" är uppgiftsvyns huvudknapp.
   - Idag: bara nästa ogjorda pass (på dagens datum) får den stora Starta-knappen. Andra pass får länken "Starta →", och klara pass visar "Klart · x/x gjorda" och tonas ner. Repetera får den stora knappen bara när dagens pass är klara.
@@ -307,5 +307,4 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**
-- Ska sidan finnas på mobilen via GitHub Pages (Jonatan slår på det i repots inställningar)? Inte besvarat.
 - Avvikelser från layoutspecen (fas 8) är visade men inte kommenterade: sortering överst i Kapitel, tre klick via Bank/Kapitel, ingen "Har du räknat klart?".
