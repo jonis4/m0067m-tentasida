@@ -513,3 +513,4 @@ details.pass.hopfallt .rader { opacity: 1; }
   dialog.hjalp li { margin-bottom: 0.3rem; }
   dialog.hjalp .knapp-stor { margin-top: 0.2rem; padding: 0.6rem 1.1rem; }
 }
+.kopiera-rad + .tl-formelblad { margin: 0.8rem 0 0.4rem; }

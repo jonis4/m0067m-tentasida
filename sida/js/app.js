@@ -723,10 +723,27 @@
     return rader.join("\n");
   }
 
+  // Raden under uppgiften: Kopiera uppgiften · Formelblad (formelbladet fälls ut under raden).
   function kopieraKnapp(u, medLosning) {
     return '<p class="kopiera-rad"><button type="button" class="lank kopiera" data-kopiera="' + u.id + '" data-med-losning="' + (medLosning ? 1 : 0) + '">'
-      + (medLosning && u.losning ? "Kopiera uppgift och lösning" : "Kopiera uppgiften") + "</button></p>";
+      + (medLosning && u.losning ? "Kopiera uppgift och lösning" : "Kopiera uppgiften") + "</button>"
+      + ' · <button type="button" class="lank" data-formelblad aria-expanded="false" aria-controls="formelblad-ruta" title="Tangent F">Formelblad</button></p>'
+      + '<div id="formelblad-ruta" class="tl-formelblad text" hidden></div>';
   }
+
+  function vaxlaFormelblad() {
+    const k = app.querySelector("[data-formelblad]");
+    const ruta = app.querySelector("#formelblad-ruta");
+    if (!k || !ruta) return false;
+    if (!ruta.innerHTML) ruta.innerHTML = '<h2 class="del">Formelblad</h2>' + Format.formatera(B.profil.formelblad, null, "formelblad");
+    ruta.hidden = !ruta.hidden;
+    k.setAttribute("aria-expanded", String(!ruta.hidden));
+    return true;
+  }
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-formelblad]")) vaxlaFormelblad();
+  });
 
   async function kopiera(knapp) {
     const u = B.uppgifter[knapp.dataset.kopiera];
@@ -1080,6 +1097,7 @@
     if (e.key === "ArrowLeft" && tangentKontext.forra) ga(tangentKontext.forra, { ersatt: true });
     else if (e.key === "ArrowRight" && tangentKontext.nasta) ga(tangentKontext.nasta, { ersatt: true });
     else if ((e.key === "k" || e.key === "K") && app.querySelector(".kopiera")) kopiera(app.querySelector(".kopiera"));
+    else if ((e.key === "f" || e.key === "F") && app.querySelector("[data-formelblad]")) vaxlaFormelblad();
     else if (e.key === "l" || e.key === "L") {
       const k = app.querySelector(".visa-losning");
       if (!k) return;
