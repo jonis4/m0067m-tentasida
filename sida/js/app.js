@@ -127,9 +127,12 @@
     return u.avsnitt.join(" ");
   }
 
+  // Statusmarkering i listor (layoutspec §4.2 använder ○ ●). Ordet finns som title och för skärmläsare.
   function statusEtikett(id) {
     const s = Status.get(id);
-    return s ? '<span class="rad-status" data-status="' + s.status + '">' + Status.STATUSAR[s.status] + "</span>" : "";
+    const namn = s ? Status.STATUSAR[s.status] : "Ej gjord";
+    return '<span class="rad-status" data-status="' + (s ? s.status : "ej") + '" title="' + namn + '">'
+      + '<span class="markor" aria-hidden="true"></span><span class="dold">' + namn + "</span></span>";
   }
 
   function statusKnappar(id) {
@@ -183,6 +186,9 @@
       html += '<p class="notis">' + esc(dag.notis) + "</p>";
     } else {
       let interleavingVisad = false;
+      // Nästa pass = första passet med uppgifter där någon uppgift saknar status.
+      const passKlart = (ps) => ps.uppgifter.length > 0 && ps.uppgifter.every((id) => Status.get(id));
+      const nastaPass = dag.pass.findIndex((ps) => ps.uppgifter.length > 0 && !passKlart(ps));
       dag.pass.forEach((ps, i) => {
         const nr = i + 1;
         const blandat = !ps.beskrivning && ps.uppgifter.length > 1 && !interleavingVisad;
@@ -190,17 +196,22 @@
         const rader = ps.uppgifter.map((id) => {
           const u = B.uppgifter[id];
           return '<li><a href="#/idag/' + visad + "/" + nr + "/" + id + '">'
-            + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
             + statusEtikett(id)
+            + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
             + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
             + '<span class="pil" aria-hidden="true">→</span></a></li>';
         }).join("");
         const forsta = ps.uppgifter.find((id) => !klarad(id)) || ps.uppgifter[0];
         // Ett tentapass listar inte uppgifterna (avsnitt och typ skulle avslöja metoden).
-        const knapp = ps.tenta
-          ? '<p><a class="knapp-stor" href="#/tentalage/ny/idag/' + visad + "/" + nr + '">Starta tentaläge</a></p>'
-          : forsta ? '<p><a class="knapp-stor" href="#/idag/' + visad + "/" + nr + "/" + forsta + '">Starta</a></p>' : "";
-        html += '<section class="pass"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
+        const klart = passKlart(ps);
+        const huvud = i === nastaPass && visad === idag; // den enda stora knappen på sidan
+        const href = ps.tenta ? "#/tentalage/ny/idag/" + visad + "/" + nr : forsta ? "#/idag/" + visad + "/" + nr + "/" + forsta : null;
+        const etikett = ps.tenta ? "Starta tentaläge" : "Starta";
+        const knapp = !href ? ""
+          : klart ? '<p class="pass-klart">Klart · ' + ps.uppgifter.length + "/" + ps.uppgifter.length + " gjorda</p>"
+          : huvud ? '<p><a class="knapp-stor" href="' + href + '">' + etikett + "</a></p>"
+          : '<p><a class="pass-starta" href="' + href + '">' + etikett + " →</a></p>";
+        html += '<section class="pass' + (klart ? " klart" : "") + '"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
           + '<p class="pass-beskrivning">' + esc(passBeskrivning(ps)) + "</p>"
           + (blandat ? strategiRad(6) : "")
           + (rader && !ps.tenta ? '<ul class="rader">' + rader + "</ul>" : "")
@@ -208,7 +219,8 @@
           + "</section>";
       });
     }
-    if (visad === idag) html += repeteraSektion(dag);
+    const passKvar = dag && dag.pass && dag.pass.some((ps) => ps.uppgifter.length > 0 && !ps.uppgifter.every((id) => Status.get(id)));
+    if (visad === idag) html += repeteraSektion(dag, !passKvar);
     return html + '<p class="hela-schemat"><a href="#/idag/schema">Visa hela schemat</a></p>';
   }
 
@@ -231,7 +243,9 @@
       .map(({ id }) => id);
   }
 
-  function repeteraSektion(dag) {
+  const REPETERA_SYNLIGA = 3;
+
+  function repeteraSektion(dag, huvudknapp) {
     repeteraFrys = repeteraLista(dag);
     const idag = idagIso();
     let html = '<section class="pass repetera"><h2 class="del">Repetera</h2>';
@@ -239,20 +253,31 @@
       return html + '<p class="tyst">Inget att repetera än. Här hamnar uppgifter du gjort med hjälp, '
         + "eller gjort själv för minst tre dagar sedan.</p></section>";
     }
-    const rader = repeteraFrys.map((id) => {
+    const rader = repeteraFrys.map((id, i) => {
       const u = B.uppgifter[id], s = Status.get(id);
       const sedan = dagarMellan(isoAv(new Date(s.tid)), idag);
-      return '<li><a href="#/idag/repetera/' + id + '">'
+      return '<li' + (i >= REPETERA_SYNLIGA ? ' class="extra" hidden' : "") + '><a href="#/idag/repetera/' + id + '">'
+        + statusEtikett(id)
         + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
-        + '<span class="rad-status">' + Status.STATUSAR[s.status] + ' <span class="tyst">för ' + sedan + (sedan === 1 ? " dag" : " dagar") + " sedan</span></span>"
-        + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
+        + '<span class="rad-meta">' + sedan + (sedan === 1 ? " dag" : " dagar") + " sedan</span>"
         + '<span class="pil" aria-hidden="true">→</span></a></li>';
     }).join("");
+    const fler = repeteraFrys.length > REPETERA_SYNLIGA
+      ? '<p><button type="button" class="lank tyst" data-visa-alla>Visa alla (' + repeteraFrys.length + ")</button></p>" : "";
+    const start = "#/idag/repetera/" + repeteraFrys[0];
     return html + '<p class="pass-beskrivning">Sitter de fortfarande? Räkna dem från noll utan att titta.</p>'
       + strategiRad(7)
-      + '<ul class="rader">' + rader + "</ul>"
-      + '<p><a class="knapp-stor" href="#/idag/repetera/' + repeteraFrys[0] + '">Starta</a></p></section>';
+      + '<ul class="rader">' + rader + "</ul>" + fler
+      + (huvudknapp ? '<p><a class="knapp-stor" href="' + start + '">Starta</a></p>'
+        : '<p><a class="pass-starta" href="' + start + '">Starta →</a></p>') + "</section>";
   }
+
+  document.addEventListener("click", (e) => {
+    const k = e.target.closest("[data-visa-alla]");
+    if (!k) return;
+    app.querySelectorAll(".repetera li.extra").forEach((li) => { li.hidden = false; });
+    k.parentElement.remove();
+  });
 
   function repeteraKontext(id) {
     return {
@@ -525,9 +550,9 @@
     const uppgRad = (a) => (id) => {
       const u = B.uppgifter[id];
       return '<li><a href="#/kapitel/' + a + "/" + id + '">'
+        + statusEtikett(id)
         + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr
         + ' <span class="tyst">· ' + esc(B.typer[u.typ].namn) + "</span></span>"
-        + statusEtikett(id)
         + '<span class="pil" aria-hidden="true">→</span></a></li>';
     };
 
@@ -587,9 +612,9 @@
     const rad = (id) => {
       const u = B.uppgifter[id];
       return '<li><a href="#/bank/' + tenta.id + "/" + u.nr + '">'
+        + statusEtikett(u.id)
         + '<span class="nr">' + u.nr + "</span>"
         + '<span class="rad-namn">' + esc(B.typer[u.typ].namn) + "</span>"
-        + statusEtikett(u.id)
         + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
         + '<span class="pil" aria-hidden="true">→</span></a></li>';
     };
@@ -620,12 +645,13 @@
 
     const losning = u.losning === null
       ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>' + mallHtml(u)
-      : '<button type="button" class="visa-losning" aria-expanded="false" aria-controls="losning">Visa lösningsförslag</button>'
+      : '<p class="visa-rad"><button type="button" class="lank visa-losning" aria-expanded="false" aria-controls="losning">Visa lösningsförslag</button></p>'
+        + strategiRad(3)
         + '<div id="losning" class="losningstext" hidden></div>';
 
     const nastaLank = nasta
-      ? '<a href="' + nasta + '" data-ersatt>Nästa uppgift →</a>'
-      : '<a href="' + ctx.foralder + '" data-tillbaka="' + ctx.foralder + '">Sista uppgiften. ' + ctx.sistaText + "</a>";
+      ? '<a class="knapp-stor" href="' + nasta + '" data-ersatt>Nästa uppgift →</a>'
+      : '<a class="knapp-stor" href="' + ctx.foralder + '" data-tillbaka="' + ctx.foralder + '">Sista uppgiften. ' + ctx.sistaText + "</a>";
 
     const html = kontextrad(ctx.foralder, ctx.foralderNamn)
       + '<article class="uppgift">'
@@ -651,8 +677,7 @@
       knapp.addEventListener("click", () => {
         const visas = knapp.getAttribute("aria-expanded") === "true";
         if (!visas && !ruta.innerHTML) {
-          ruta.innerHTML = strategiRad(3)
-            + '<div class="text">' + Format.formatera(u.losning, figurPdfLosning, kalla + " lösning") + "</div>"
+          ruta.innerHTML = '<div class="text">' + Format.formatera(u.losning, figurPdfLosning, kalla + " lösning") + "</div>"
             + mallHtml(u);
         }
         ruta.hidden = visas;

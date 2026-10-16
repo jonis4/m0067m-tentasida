@@ -296,6 +296,12 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
 - "Kopiera uppgiften" (även tangent K) under uppgiftstexten kopierar kurs, källa, typ, avsnitt och uppgiften ordagrant med LaTeX, för att klistra in i en AI. Är lösningen öppnad heter knappen "Kopiera uppgift och lösning" och tar med lösningen. Knappen finns inte under tentan, men i genomgången.
 - Hjälpfönster (`<dialog id="hjalp">`): visas första gången (localStorage `m0067m.hjalp.sedd`), inte i tentaläget, och öppnas igen med "Hjälp" i sidfoten. Kortfattat (8 punkter), och nämner vilket schema som används. Testerna sätter `window.INGEN_HJALP = true` för att slippa det. Idag visar en liten rad "<schemanamn> · Byt schema" när det finns flera scheman.
 - Hosting: `tentor/index.html` skickar vidare till `sida/index.html`, och `.nojekyll` gör att GitHub Pages publicerar filerna orörda. Tänkt adress: https://jonis4.github.io/m0067m-tentasida/ (Jonatan slår på Pages i repots inställningar).
+- UX-genomgång (16 okt), punkt 2–6 genomförda, punkt 1 (dölja typ/avsnitt före lösning) inte vald:
+  - "Visa lösningsförslag" är en textknapp, och strategiraden "Illusioner av kompetens" står före klicket. "Nästa uppgift →" är uppgiftsvyns huvudknapp.
+  - Idag: bara nästa ogjorda pass (på dagens datum) får den stora Starta-knappen. Andra pass får länken "Starta →", och klara pass visar "Klart · x/x gjorda" och tonas ner. Repetera får den stora knappen bara när dagens pass är klara.
+  - Repetera visar 3 uppgifter och "Visa alla (n)". Raderna visar bara "n dagar sedan".
+  - Status i listor är en CSS-ritad markering: ○ ej gjord, ◐ med hjälp, ● själv, ● sitter i accent. Ordet ligger i `title` och i dold text (`.dold`).
+  - Princip: det stora grå blocket (`.knapp-stor`) används bara för sidans huvudhandling.
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**
