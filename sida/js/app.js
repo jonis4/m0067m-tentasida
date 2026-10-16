@@ -167,6 +167,9 @@
       + "<h1>" + datumText(visad) + "</h1>" + pil(nasta, "→", "Nästa dag")
       + '<span class="kvar">' + (kvar > 0 ? kvar + (kvar === 1 ? " dag kvar" : " dagar kvar") : kvar === 0 ? "Tentadag" : "") + "</span></div>";
 
+    if (Object.keys(SCHEMOR).length) {
+      html += '<p class="tyst schema-namn">' + esc(S.namn || "Schema") + ' · <a href="#/installningar">Byt schema</a></p>';
+    }
     if (visad !== idag) {
       html += '<p class="tyst annan-dag">' + (fore && visad === forstaDag ? "Schemat börjar " + datumText(forstaDag).toLowerCase() + "." : "Du tittar på en annan dag än idag.")
         + (dagMap[idag] ? ' <a href="#/idag" data-ersatt>Till idag</a>' : "") + "</p>";
@@ -821,7 +824,8 @@
     let varning = "";
     if (!Status.sparbar) varning += "<p><strong>Statusen kan inte sparas i den här webbläsaren.</strong> Ladda ner en kopia under Inställningar innan du stänger fliken.</p>";
     if (Sparfil.stod && (Sparfil.lage === "behover-ok" || Sparfil.lage === "fel")) varning += sparfilRad();
-    sidfot.innerHTML = varning + '<p><a href="#/strategi">Strategi</a> · <a href="#/installningar">Inställningar</a></p>';
+    sidfot.innerHTML = varning + '<p><button type="button" class="lank" data-hjalp>Hjälp</button> · '
+      + '<a href="#/strategi">Strategi</a> · <a href="#/installningar">Inställningar</a></p>';
     const instEl = document.getElementById("installningar");
     if (instEl) instEl.innerHTML = installningarInnehall();
   }
@@ -983,10 +987,52 @@
     renderaSidfot();
   });
 
+  // ---------- Hjälp: visas första gången, sedan via "Hjälp" i sidfoten ----------
+  const HJALP_NYCKEL = "m0067m.hjalp.sedd";
+  const hjalp = document.getElementById("hjalp");
+
+  function hjalpHtml() {
+    const scheman = Object.keys(SCHEMOR).length
+      ? "<li><strong>Schema:</strong> du använder " + esc(S.namn) + ". "
+        + Object.values(SCHEMOR).concat([window.SCHEMA]).filter((x) => x !== S).map((x) => esc(x.namn)).join(" och ")
+        + " finns också. Byt under Inställningar.</li>"
+      : "";
+    return '<h2 id="hjalp-rubrik">Så funkar sidan</h2><ul>'
+      + "<li><strong>Idag</strong> visar dagens pass. Tryck <em>Starta</em> och räkna.</li>"
+      + scheman
+      + "<li><strong>Bank</strong> har alla 81 uppgifter: 3 gamla tentor, 3 övningstentor och 3 diagnoser.</li>"
+      + "<li><strong>Kapitel</strong> visar uppgifterna per avsnitt och hur mycket du klarat.</li>"
+      + "<li><strong>Lösningen är dold</strong> tills du klickar. Markera sedan hur det gick: med hjälp, själv eller sitter.</li>"
+      + "<li><strong>Tentaläge:</strong> <em>Skriv som tenta</em> i Bank. Timer, formelblad och inga lösningar förrän du lämnar in.</li>"
+      + "<li><strong>Kopiera uppgiften</strong> under varje uppgift, för att klistra in i en AI.</li>"
+      + "<li>Allt sparas automatiskt i webbläsaren.</li>"
+      + '</ul><p><button type="button" class="knapp-stor" data-hjalp-stang>Kom igång</button></p>';
+  }
+
+  function visaHjalp() {
+    if (!hjalp || hjalp.open) return;
+    hjalp.innerHTML = hjalpHtml();
+    try { hjalp.showModal(); } catch (e) { hjalp.setAttribute("open", ""); }
+    const k = hjalp.querySelector("[data-hjalp-stang]");
+    if (k) k.focus();
+  }
+
+  function stangHjalp() {
+    try { localStorage.setItem(HJALP_NYCKEL, "1"); } catch (e) { /* visas igen nästa gång */ }
+    if (hjalp && hjalp.open) hjalp.close();
+  }
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-hjalp]")) visaHjalp();
+    else if (e.target.closest("[data-hjalp-stang]")) stangHjalp();
+    else if (e.target === hjalp) stangHjalp(); // klick utanför rutan
+  });
+  if (hjalp) hjalp.addEventListener("close", () => { try { localStorage.setItem(HJALP_NYCKEL, "1"); } catch (e) { /* ignoreras */ } });
+
   // ---------- Tangentbord (layoutspec §8.6) ----------
   // ← → mellan uppgifter, L visar/döljer lösningen, 1 2 3 sätter status.
   document.addEventListener("keydown", (e) => {
-    if (!tangentKontext || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    if (!tangentKontext || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || (hjalp && hjalp.open)) return;
     if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
     const statusar = Object.keys(Status.STATUSAR);
     if (e.key === "ArrowLeft" && tangentKontext.forra) ga(tangentKontext.forra, { ersatt: true });
@@ -1019,4 +1065,7 @@
   Sparfil.vidAndring(renderaSidfot);
   rendera();
   Sparfil.init();
+  let settHjalp = false;
+  try { settHjalp = !!localStorage.getItem(HJALP_NYCKEL); } catch (e) { settHjalp = true; }
+  if (!settHjalp && !tl && !window.INGEN_HJALP) visaHjalp();
 })();

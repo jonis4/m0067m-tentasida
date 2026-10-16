@@ -424,3 +424,22 @@ details.mall > .text { margin-top: 0.8rem; padding: 1rem 1.2rem 0.2rem; backgrou
 .kopiera-rad .lank { color: var(--tyst); }
 .kopiera-rad .lank:hover { color: var(--text); }
 .installning .rensa-rad { margin-top: 1.2rem; font-size: 0.88rem; }
+
+/* ---------- Hjälp (visas första gången och via sidfoten) ---------- */
+dialog.hjalp {
+  width: min(32rem, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 1.6rem 1.8rem 1.2rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--svag);
+  border-radius: 12px;
+}
+dialog.hjalp::backdrop { background: rgba(0, 0, 0, 0.45); }
+dialog.hjalp h2 { font-size: 1.25rem; margin: 0 0 0.8rem; }
+dialog.hjalp ul { margin: 0 0 0.4rem; padding-left: 1.1rem; }
+dialog.hjalp li { margin-bottom: 0.45rem; }
+dialog.hjalp .knapp-stor { margin-top: 0.4rem; }
+.schema-namn { font-size: 0.88rem; margin: 0.2rem 0 0; }
+.sidfot button.lank { color: inherit; }
