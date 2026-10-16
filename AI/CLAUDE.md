@@ -302,6 +302,8 @@ Varje fas har ett mål, vad som ska göras och **klart när**. Ordningen följer
   - Repetera visar 3 uppgifter och "Visa alla (n)". Raderna visar bara "n dagar sedan".
   - Status i listor är en CSS-ritad markering: ○ ej gjord, ◐ med hjälp, ● själv, ● sitter i accent. Ordet ligger i `title` och i dold text (`.dold`).
   - Princip: det stora grå blocket (`.knapp-stor`) används bara för sidans huvudhandling.
+- Idag omgjord (16 okt, Jonatans val): ett pass i taget. "Nu · Pass n" är utfällt med den enda stora knappen. Klara och kommande pass är `<details>`-rader ("Pass 1 · Klart" / "Pass 2 · 2 uppgifter"). Läsning, dugga och lätt dag är en textrad. Ingen "Blandat: …"-rad, inga avsnittsnummer och inga strategirader i Idag (förklaras i hjälpen).
+- Repetition: varje dag läggs den första i Repetera-listan in sist i dagens sista vanliga pass, märkt "repetition". Valet sparas per dag i localStorage `m0067m.repetition.<datum>`. `passIds(datum, i)` ger passets uppgifter inklusive repetitionen och används av rutter och Nästa. Resten visas som raden "Repetera · n till", eller som eget huvudpass när dagen saknar övriga uppgifter (t.ex. lätt dag).
 - Git-repo i `tentor/` (gren `main`), pushat till det **publika** repot https://github.com/jonis4/m0067m-tentasida (Jonatans val: inget i materialet är hemligt). Pusha bara när Jonatan ber om det. PDF:erna är med i repot (sidans PDF- och figurlänkar behöver dem). Bara `AI/M0067M_traningsdata.jsonl` ligger i `.gitignore`. `gh` finns inte installerat.
 
 **Öppna frågor:**

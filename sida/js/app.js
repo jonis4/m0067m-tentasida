@@ -148,6 +148,37 @@
   }
 
   // ---------- Vyer ----------
+  // Pass med uppgifter men utan tenta: det sista av dem får dagens repetitionsuppgift.
+  function repPassIndex(dag) {
+    if (!dag || !dag.pass) return -1;
+    let r = -1;
+    dag.pass.forEach((ps, i) => { if (ps.uppgifter.length && !ps.tenta) r = i; });
+    return r;
+  }
+
+  // Dagens repetitionsuppgift väljs en gång per dag och sparas, så att den inte byts ut medan man räknar.
+  function dagensRepetition(dag, datum) {
+    if (datum !== idagIso() || repPassIndex(dag) < 0) return null;
+    const nyckel = "m0067m.repetition." + datum;
+    try { const sparad = localStorage.getItem(nyckel); if (sparad && B.uppgifter[sparad]) return sparad; } catch (e) { /* väljs igen */ }
+    const forsta = repeteraLista(dag)[0] || null;
+    if (forsta) { try { localStorage.setItem(nyckel, forsta); } catch (e) { /* ignoreras */ } }
+    return forsta;
+  }
+
+  // Uppgifterna i ett pass, inklusive dagens repetition om passet är dagens sista.
+  function passIds(datum, i) {
+    const dag = dagMap[datum];
+    const ps = dag && dag.pass && dag.pass[i];
+    if (!ps) return [];
+    const ids = ps.uppgifter.slice();
+    if (i === repPassIndex(dag)) {
+      const r = dagensRepetition(dag, datum);
+      if (r && !ids.includes(r)) ids.push(r);
+    }
+    return ids;
+  }
+
   function vyIdag(visad) {
     const idag = idagIso();
     const fore = idag < forstaDag;
@@ -159,6 +190,7 @@
       visad = fore ? forstaDag : idag;
     }
     const dag = dagMap[visad];
+    const arIdag = visad === idag;
     document.title = datumText(visad) + " · M0067M";
     const kvar = dagarMellan(visad, S.tentadatum);
     const forra = plusDagar(visad, -1), nasta = plusDagar(visad, 1);
@@ -173,54 +205,63 @@
     if (Object.keys(SCHEMOR).length) {
       html += '<p class="tyst schema-namn">' + esc(S.namn || "Schema") + ' · <a href="#/installningar">Byt schema</a></p>';
     }
-    if (visad !== idag) {
+    if (!arIdag) {
       html += '<p class="tyst annan-dag">' + (fore && visad === forstaDag ? "Schemat börjar " + datumText(forstaDag).toLowerCase() + "." : "Du tittar på en annan dag än idag.")
         + (dagMap[idag] ? ' <a href="#/idag" data-ersatt>Till idag</a>' : "") + "</p>";
     }
 
-    if (visad === plusDagar(S.tentadatum, -1)) html += '<div class="strategier">' + strategiRad(15) + strategiRad(2) + "</div>";
+    const repId = arIdag ? dagensRepetition(dag, visad) : null;
+    let nu = -1;
 
     if (!dag) {
       html += '<p class="tyst">Inget inlagt den här dagen.</p>';
     } else if (dag.notis) {
       html += '<p class="notis">' + esc(dag.notis) + "</p>";
     } else {
-      let interleavingVisad = false;
-      // Nästa pass = första passet med uppgifter där någon uppgift saknar status.
-      const passKlart = (ps) => ps.uppgifter.length > 0 && ps.uppgifter.every((id) => Status.get(id));
-      const nastaPass = dag.pass.findIndex((ps) => ps.uppgifter.length > 0 && !passKlart(ps));
+      const lista = dag.pass.map((ps, i) => passIds(visad, i));
+      const klart = (i) => lista[i].length > 0 && lista[i].every((id) => Status.get(id));
+      nu = arIdag ? dag.pass.findIndex((ps, i) => lista[i].length > 0 && !klart(i)) : -1;
+
       dag.pass.forEach((ps, i) => {
-        const nr = i + 1;
-        const blandat = !ps.beskrivning && ps.uppgifter.length > 1 && !interleavingVisad;
-        if (blandat) interleavingVisad = true;
-        const rader = ps.uppgifter.map((id) => {
+        const nr = i + 1, ids = lista[i];
+        const forsta = ids.find((id) => !klarad(id)) || ids[0];
+        const href = ps.tenta ? "#/tentalage/ny/idag/" + visad + "/" + nr : forsta ? "#/idag/" + visad + "/" + nr + "/" + forsta : null;
+        const etikett = ps.tenta ? "Starta tentaläge" : "Starta";
+        const besk = ps.beskrivning ? '<p class="pass-beskrivning">' + esc(ps.beskrivning) + "</p>" : "";
+        const antal = ids.length + (ids.length === 1 ? " uppgift" : " uppgifter");
+        // Ett tentapass listar inte uppgifterna (avsnitt och typ skulle avslöja metoden).
+        const rader = ps.tenta || !ids.length ? "" : '<ul class="rader">' + ids.map((id) => {
           const u = B.uppgifter[id];
           return '<li><a href="#/idag/' + visad + "/" + nr + "/" + id + '">'
             + statusEtikett(id)
             + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
-            + '<span class="rad-meta">' + esc(avsnittText(u)) + "</span>"
+            + (id === repId && !ps.uppgifter.includes(id) ? '<span class="rad-meta">repetition</span>' : "")
             + '<span class="pil" aria-hidden="true">→</span></a></li>';
-        }).join("");
-        const forsta = ps.uppgifter.find((id) => !klarad(id)) || ps.uppgifter[0];
-        // Ett tentapass listar inte uppgifterna (avsnitt och typ skulle avslöja metoden).
-        const klart = passKlart(ps);
-        const huvud = i === nastaPass && visad === idag; // den enda stora knappen på sidan
-        const href = ps.tenta ? "#/tentalage/ny/idag/" + visad + "/" + nr : forsta ? "#/idag/" + visad + "/" + nr + "/" + forsta : null;
-        const etikett = ps.tenta ? "Starta tentaläge" : "Starta";
-        const knapp = !href ? ""
-          : klart ? '<p class="pass-klart">Klart · ' + ps.uppgifter.length + "/" + ps.uppgifter.length + " gjorda</p>"
-          : huvud ? '<p><a class="knapp-stor" href="' + href + '">' + etikett + "</a></p>"
-          : '<p><a class="pass-starta" href="' + href + '">' + etikett + " →</a></p>";
-        html += '<section class="pass' + (klart ? " klart" : "") + '"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
-          + '<p class="pass-beskrivning">' + esc(passBeskrivning(ps)) + "</p>"
-          + (blandat ? strategiRad(6) : "")
-          + (rader && !ps.tenta ? '<ul class="rader">' + rader + "</ul>" : "")
-          + knapp
-          + "</section>";
+        }).join("") + "</ul>";
+
+        if (!ids.length) {
+          // Läsning, dugga, lätt dag: bara en rad text.
+          html += '<section class="pass text-pass"><h2 class="del">' + esc(ps.rubrik) + "</h2>" + besk + "</section>";
+        } else if (i === nu) {
+          html += '<section class="pass pass-nu"><div class="pass-huvud"><h2 class="del">Nu · ' + esc(ps.rubrik) + "</h2>"
+            + '<span class="pass-antal">' + antal + "</span></div>" + besk + rader
+            + '<p><a class="knapp-stor" href="' + href + '">' + etikett + "</a></p></section>";
+        } else if (arIdag) {
+          // Klara och kommande pass är hopfällda till en rad.
+          const k = klart(i);
+          html += '<details class="pass hopfallt' + (k ? " klart" : "") + '"><summary><span class="pass-rubrik">' + esc(ps.rubrik) + "</span>"
+            + '<span class="pass-antal">' + (k ? "Klart" : antal) + "</span></summary>"
+            + besk + rader + (k ? "" : '<p><a class="pass-starta" href="' + href + '">' + etikett + " →</a></p>") + "</details>";
+        } else {
+          // En annan dag: allt synligt men lågmält.
+          html += '<section class="pass"><div class="pass-huvud"><h2 class="del">' + esc(ps.rubrik) + "</h2>"
+            + '<span class="pass-antal">' + antal + "</span></div>" + besk + rader
+            + (href ? '<p><a class="pass-starta" href="' + href + '">' + etikett + " →</a></p>" : "") + "</section>";
+        }
       });
     }
-    const passKvar = dag && dag.pass && dag.pass.some((ps) => ps.uppgifter.length > 0 && !ps.uppgifter.every((id) => Status.get(id)));
-    if (visad === idag) html += repeteraSektion(dag, !passKvar);
+
+    if (arIdag) html += repeteraRad(dag, repId, nu === -1);
     return html + '<p class="hela-schemat"><a href="#/idag/schema">Visa hela schemat</a></p>';
   }
 
@@ -243,41 +284,18 @@
       .map(({ id }) => id);
   }
 
-  const REPETERA_SYNLIGA = 3;
-
-  function repeteraSektion(dag, huvudknapp) {
-    repeteraFrys = repeteraLista(dag);
-    const idag = idagIso();
-    let html = '<section class="pass repetera"><h2 class="del">Repetera</h2>';
-    if (!repeteraFrys.length) {
-      return html + '<p class="tyst">Inget att repetera än. Här hamnar uppgifter du gjort med hjälp, '
-        + "eller gjort själv för minst tre dagar sedan.</p></section>";
-    }
-    const rader = repeteraFrys.map((id, i) => {
-      const u = B.uppgifter[id], s = Status.get(id);
-      const sedan = dagarMellan(isoAv(new Date(s.tid)), idag);
-      return '<li' + (i >= REPETERA_SYNLIGA ? ' class="extra" hidden' : "") + '><a href="#/idag/repetera/' + id + '">'
-        + statusEtikett(id)
-        + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr + "</span>"
-        + '<span class="rad-meta">' + sedan + (sedan === 1 ? " dag" : " dagar") + " sedan</span>"
-        + '<span class="pil" aria-hidden="true">→</span></a></li>';
-    }).join("");
-    const fler = repeteraFrys.length > REPETERA_SYNLIGA
-      ? '<p><button type="button" class="lank tyst" data-visa-alla>Visa alla (' + repeteraFrys.length + ")</button></p>" : "";
-    const start = "#/idag/repetera/" + repeteraFrys[0];
-    return html + '<p class="pass-beskrivning">Sitter de fortfarande? Räkna dem från noll utan att titta.</p>'
-      + strategiRad(7)
-      + '<ul class="rader">' + rader + "</ul>" + fler
-      + (huvudknapp ? '<p><a class="knapp-stor" href="' + start + '">Starta</a></p>'
-        : '<p><a class="pass-starta" href="' + start + '">Starta →</a></p>') + "</section>";
+  function repeteraRad(dag, repId, passKlara) {
+    repeteraFrys = repeteraLista(dag).filter((id) => id !== repId);
+    if (!repeteraFrys.length) return "";
+    const href = "#/idag/repetera/" + repeteraFrys[0];
+    const n = repeteraFrys.length;
+    return passKlara
+      ? '<section class="pass pass-nu repetera"><div class="pass-huvud"><h2 class="del">Repetera</h2><span class="pass-antal">'
+        + n + (n === 1 ? " uppgift" : " uppgifter") + '</span></div><p class="pass-beskrivning">Sitter de fortfarande? Räkna dem från noll utan att titta.</p>'
+        + '<p><a class="knapp-stor" href="' + href + '">Starta</a></p></section>'
+      : '<p class="repetera repetera-rad"><span>Repetera · ' + n + (repId ? " till" : (n === 1 ? " uppgift" : " uppgifter")) + "</span>"
+        + '<a class="pass-starta" href="' + href + '">Starta →</a></p>';
   }
-
-  document.addEventListener("click", (e) => {
-    const k = e.target.closest("[data-visa-alla]");
-    if (!k) return;
-    app.querySelectorAll(".repetera li.extra").forEach((li) => { li.hidden = false; });
-    k.parentElement.remove();
-  });
 
   function repeteraKontext(id) {
     return {
@@ -331,7 +349,7 @@
   function idagKontext(datum, nr) {
     const ps = dagMap[datum].pass[nr - 1];
     return {
-      ids: ps.uppgifter,
+      ids: passIds(datum, nr - 1),
       href: (id) => "#/idag/" + datum + "/" + nr + "/" + id,
       foralder: "#/idag/" + datum,
       foralderNamn: datumText(datum) + " · " + ps.rubrik,
@@ -807,8 +825,7 @@
     else if (vy === "strategi" && delar.length === 1) html = vyStrategi();
     else if (vy === "installningar" && delar.length === 1) html = vyInstallningar();
     else if (vy === "idag" && dagMap[a1] && delar.length === 2) html = vyIdag(a1);
-    else if (vy === "idag" && dagMap[a1] && delar.length === 4 && dagMap[a1].pass
-      && dagMap[a1].pass[+a2 - 1] && dagMap[a1].pass[+a2 - 1].uppgifter.includes(delar[3])) {
+    else if (vy === "idag" && dagMap[a1] && delar.length === 4 && passIds(a1, +a2 - 1).includes(delar[3])) {
       html = vyUppgift(B.uppgifter[delar[3]], idagKontext(a1, +a2));
     }
     else if (vy === "kapitel" && delar.length === 1) html = vyKapitel(q, null);
@@ -1023,7 +1040,8 @@
         + " finns också. Byt under Inställningar.</li>"
       : "";
     return '<h2 id="hjalp-rubrik">Så funkar sidan</h2><ul>'
-      + "<li><strong>Idag</strong> visar dagens pass. Tryck <em>Starta</em> och räkna.</li>"
+      + "<li><strong>Idag</strong> visar passet du ska göra nu. Tryck <em>Starta</em> och räkna. Passen blandar uppgiftstyper med flit, "
+      + "och sist i dagens sista pass ligger en repetition av något du gjort för några dagar sedan.</li>"
       + scheman
       + "<li><strong>Bank</strong> har alla 81 uppgifter: 3 gamla tentor, 3 övningstentor och 3 diagnoser.</li>"
       + "<li><strong>Kapitel</strong> visar uppgifterna per avsnitt och hur mycket du klarat.</li>"

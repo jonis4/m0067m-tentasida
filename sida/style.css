@@ -479,3 +479,29 @@ button.visa-losning.lank[aria-expanded="true"] { color: var(--tyst); }
   .rader a:not(:has(.nr)) > .pil { order: 2; }
   .rader a:not(:has(.nr)) > .rad-meta { order: 3; margin-left: 1.3rem; font-size: 0.85rem; }
 }
+
+/* ---------- Idag: ett pass i taget ---------- */
+.pass-huvud { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.pass-huvud h2.del { margin: 0; }
+.pass-antal { color: var(--tyst); font-size: 0.88rem; }
+.pass.pass-nu { margin-top: 2.4rem; }
+.pass.pass-nu .rader { margin-top: 0.6rem; }
+.text-pass { margin-top: 2rem; }
+.text-pass .pass-beskrivning { margin-top: 0.3rem; }
+details.pass.hopfallt { margin-top: 0; }
+details.pass.hopfallt summary {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  padding: 0.8rem 0; cursor: pointer; list-style: none; color: var(--tyst);
+}
+details.pass.hopfallt summary::-webkit-details-marker { display: none; }
+details.pass.hopfallt summary:hover, details.pass.hopfallt[open] summary { color: var(--text); }
+details.pass.hopfallt .pass-rubrik::after { content: "›"; display: inline-block; margin-left: 0.35rem; }
+details.pass.hopfallt[open] .pass-rubrik::after { transform: rotate(90deg); }
+details.pass.hopfallt .rader { opacity: 1; }
+.pass-nu + details.pass.hopfallt, details.pass.hopfallt:first-of-type { margin-top: 1.6rem; }
+.repetera-rad { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-top: 2.4rem; color: var(--tyst); }
+.repetera-rad .pass-starta { margin-top: 0; }
+@media (pointer: coarse), (max-width: 560px) {
+  button.visa-losning.lank, button.visa-losning.lank:hover, .kopiera-rad .lank { display: inline-block; padding: 0.65rem 0; }
+  .kopiera-rad { margin-top: 0; }
+}
