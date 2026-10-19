@@ -950,39 +950,88 @@
     if (instEl) instEl.innerHTML = installningarInnehall();
   }
 
+  // ---------- Inställningar: rader med namn till vänster och val till höger ----------
+  // Segmenterat val: [ A | B | C ]. Varje knapp har data-sidfot med sin handling.
+  function segment(etikett, val) {
+    return '<div class="val" role="group" aria-label="' + esc(etikett) + '">'
+      + val.map(([handling, namn, vald]) => '<button type="button" data-sidfot="' + handling + '" aria-pressed="' + vald + '">' + namn + "</button>").join("")
+      + "</div>";
+  }
+
+  function instRad(namn, hjalp, kontroll) {
+    return '<div class="inst-rad"><div class="inst-text"><p class="inst-namn">' + namn + "</p>"
+      + (hjalp ? '<p class="inst-hjalp">' + hjalp + "</p>" : "") + "</div>"
+      + (kontroll ? '<div class="inst-kontroll">' + kontroll + "</div>" : "") + "</div>";
+  }
+
+  function aktuelltTema() {
+    try { return localStorage.getItem("m0067m.tema") || "auto"; } catch (e) { return "auto"; }
+  }
+
+  // Kopia på disken: namn, förklaring och knappar beroende på läge.
+  function kopiaRad() {
+    if (!Sparfil.stod) return instRad("Kopia på disken", "Finns bara i Edge och Chrome. Använd Ladda ner nedan i stället.", "");
+    const namn = "<strong>" + esc(Sparfil.namn || "") + "</strong>";
+    const lank = (h, t) => '<button type="button" class="lank" data-sidfot="' + h + '">' + t + "</button>";
+    switch (Sparfil.lage) {
+      case "aktiv":
+        return instRad("Kopia på disken", "Skrivs automatiskt till " + namn + " varje gång du markerar något.",
+          lank("sparfil-valj", "Byt fil") + " · " + lank("sparfil-sluta", "Stäng av"));
+      case "behover-ok":
+        return instRad("Kopia på disken", "Webbläsaren vill att du godkänner kopian till " + namn + " en gång per besök.",
+          '<button type="button" class="knapp" data-sidfot="sparfil-ateranslut">Fortsätt</button> ' + lank("sparfil-sluta", "Stäng av"));
+      case "fel":
+        return instRad("Kopia på disken", "<strong>Kunde inte skriva till " + esc(Sparfil.namn || "filen") + ".</strong>",
+          lank("sparfil-valj", "Välj fil igen") + " · " + lank("sparfil-sluta", "Stäng av"));
+      default:
+        return instRad("Kopia på disken", "Av. Välj en fil så uppdateras den automatiskt. Skyddar om webbläsardatan rensas.",
+          '<button type="button" class="knapp" data-sidfot="sparfil-valj">Välj fil…</button>');
+    }
+  }
+
   function installningarInnehall() {
     const n = Status.antal();
-    let kopia;
+    const nSparade = Status.sparadeIds().length;
+
+    // Schema, tema, studietips
+    const allaScheman = [["", window.SCHEMA]].concat(Object.entries(SCHEMOR));
+    const kortNamn = (sc) => esc((sc.namn || "Standard").replace(/ schema$/, ""));
+    const allmant = (Object.keys(SCHEMOR).length
+        ? instRad("Schema", "Vilket pluggschema Idag visar.",
+          segment("Schema", allaScheman.map(([k, sc]) => ["schema:" + k, kortNamn(sc), (valtSchema || "") === k])))
+        : "")
+      + instRad("Tema", "", segment("Tema", [["tema:auto", "Auto", aktuelltTema() === "auto"], ["tema:light", "Ljust", aktuelltTema() === "light"], ["tema:dark", "Mörkt", aktuelltTema() === "dark"]]))
+      + instRad("Studietips", 'Korta tips ur <em>A Mind for Numbers</em> där de passar. Alla finns under <a href="#/strategi">Strategi</a>.',
+        segment("Studietips", [["strategi:pa", "På", inst.strategi], ["strategi:av", "Av", !inst.strategi]]));
+
+    // Din data
+    let data;
     if (sidfotLage && sidfotLage.typ === "import") {
-      kopia = "<p>Kopian innehåller status för " + sidfotLage.granskning.antal + " uppgifter. Den ersätter det du har nu ("
+      data = '<div class="inst-fraga"><p>Kopian innehåller status för ' + sidfotLage.granskning.antal + " uppgifter. Den ersätter det du har nu ("
         + n + " uppgifter).</p>"
         + '<p><button type="button" class="knapp" data-sidfot="importera-ok">Ersätt med kopian</button> '
-        + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
+        + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p></div>';
     } else if (sidfotLage && sidfotLage.typ === "rensa") {
-      kopia = "<p>Rensa status för alla " + n + " uppgifter?</p>"
-        + '<p><button type="button" class="knapp" data-sidfot="rensa-ok">Rensa all status</button> '
-        + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p>';
+      data = '<div class="inst-fraga"><p>Rensa status för alla ' + n + " uppgifter" + (nSparade ? " och " + nSparade + " sparade" : "") + "?</p>"
+        + '<p><button type="button" class="knapp" data-sidfot="rensa-ok">Rensa all data</button> '
+        + '<button type="button" class="knapp" data-sidfot="avbryt">Avbryt</button></p></div>';
     } else {
-      kopia = (sidfotLage && sidfotLage.typ === "meddelande"
+      data = (sidfotLage && sidfotLage.typ === "meddelande"
           ? '<p class="meddelande">' + esc(sidfotLage.text)
             + (sidfotLage.angra ? ' <button type="button" class="lank" data-sidfot="angra">Ångra</button>' : "") + "</p>"
           : "")
-        + '<p class="tyst">Statusen försvinner om du rensar webbläsardata eller byter webbläsare eller dator. En kopia på disken skyddar mot det.</p>'
-        + sparfilRad()
-        + '<p>För hand: <button type="button" class="lank" data-sidfot="exportera">Ladda ner en kopia</button> · '
-        + '<button type="button" class="lank" data-sidfot="importera">Läs in en kopia</button></p>'
-        + '<p class="rensa-rad"><button type="button" class="lank" data-sidfot="rensa">Rensa all status</button></p>';
+        + kopiaRad()
+        + instRad("Flytta till en annan dator", "Ladda ner en kopia här och läs in den där.",
+          '<button type="button" class="knapp" data-sidfot="exportera">Ladda ner</button>'
+          + '<button type="button" class="knapp" data-sidfot="importera">Läs in</button>')
+        + '<p class="rensa-rad"><button type="button" class="lank" data-sidfot="rensa">Rensa all data</button></p>';
     }
-    return '<section class="installning"><h2 class="del">Status</h2>'
-      + "<p>Allt du markerar sparas automatiskt i webbläsaren. Du behöver inte trycka på något.</p>"
-      + '<p class="tyst">' + n + " av " + Object.keys(B.uppgifter).length + " uppgifter har status.</p></section>"
-      + '<section class="installning"><h2 class="del">Säkerhetskopia</h2>' + kopia + "</section>"
-      + (Object.keys(SCHEMOR).length ? '<section class="installning"><h2 class="del">Schema</h2>' + schemaRad() + "</section>" : "")
-      + '<section class="installning"><h2 class="del">Tema</h2>' + temaRad() + "</section>"
-      + '<section class="installning"><h2 class="del">Strategirader</h2>'
-      + '<p class="tyst">Korta tips ur <em>A Mind for Numbers</em> där de behövs. Alla block finns under <a href="#/strategi">Strategi</a>.</p>'
-      + "<p>" + (inst.strategi ? "På" : "Av") + ' · <button type="button" class="lank" data-sidfot="strategi-vaxla">'
-      + (inst.strategi ? "Stäng av" : "Slå på") + "</button></p></section>";
+
+    return '<section class="inst-grupp">' + allmant + "</section>"
+      + '<section class="inst-grupp"><h2 class="del">Din data</h2>'
+      + '<p class="inst-sammanfattning">Allt du markerar sparas automatiskt i webbläsaren.<br><span class="tyst">'
+      + n + " av " + Object.keys(B.uppgifter).length + " uppgifter har status" + (nSparade ? " · " + nSparade + (nSparade === 1 ? " sparad" : " sparade") : "") + "</span></p>"
+      + data + "</section>";
   }
 
   function vyInstallningar() {
@@ -1009,26 +1058,6 @@
         return '<p><button type="button" class="lank" data-sidfot="sparfil-valj">Välj en fil att kopiera till…</button>'
           + ' <span class="tyst">Filen uppdateras sedan av sig själv varje gång du markerar något.</span></p>';
     }
-  }
-
-  function temaRad() {
-    let tema = "auto";
-    try { tema = localStorage.getItem("m0067m.tema") || "auto"; } catch (e) { /* auto */ }
-    return "<p>" + [["auto", "Auto (följer datorn)"], ["light", "Ljust"], ["dark", "Mörkt"]].map(([k, namn]) =>
-      '<button type="button" class="lank tema-val" data-sidfot="tema:' + k + '" aria-pressed="' + (k === tema) + '">' + namn + "</button>")
-      .join(" · ") + "</p>";
-  }
-
-  function schemaRad() {
-    const nycklar = Object.keys(SCHEMOR);
-    if (!nycklar.length) return "";
-    if (valtSchema) {
-      return "<p>Du använder " + esc(S.namn) + '. <button type="button" class="lank" data-sidfot="schema:">Byt till '
-        + esc(window.SCHEMA.namn || "standardschemat") + "</button></p>";
-    }
-    return '<p class="tyst">Du använder ' + esc(window.SCHEMA.namn || "standardschemat") + ".</p><p>"
-      + nycklar.map((k) => '<button type="button" class="lank" data-sidfot="schema:' + k + '">Importera '
-      + esc(SCHEMOR[k].namn) + "</button>").join(" · ") + "</p>";
   }
 
   function exportera() {
@@ -1064,6 +1093,8 @@
     const k = e.target.closest("[data-sidfot]");
     if (!k) return;
     const handling = k.dataset.sidfot;
+    if (k.closest(".val") && k.getAttribute("aria-pressed") === "true") return; // redan valt
+    if (handling === "strategi:pa" || handling === "strategi:av") { inst.strategi = handling === "strategi:pa"; sparaInst(); rendera(); return; }
     if (handling === "exportera") { exportera(); return; }
     if (handling === "importera") { filval.click(); return; }
     if (handling === "sparfil-valj") { Sparfil.valj(); return; }

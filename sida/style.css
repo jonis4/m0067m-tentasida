@@ -558,3 +558,36 @@ body.tentalage .avslut .nasta { margin-left: 0; flex: 1 1 100%; }
 @media (pointer: coarse), (max-width: 560px) {
   .verktyg a, .verktyg .lank { display: inline-block; padding: 0.65rem 0; }
 }
+
+/* ---------- Enklare inställningar ---------- */
+.inst-grupp { margin-top: 2rem; }
+.inst-grupp + .inst-grupp { margin-top: 3rem; }
+.inst-grupp > h2.del { margin: 0 0 0.6rem; }
+.inst-rad { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.6rem 1.6rem; padding: 0.9rem 0; }
+.inst-text { flex: 1 1 15rem; min-width: 0; }
+.inst-namn { margin: 0; }
+.inst-hjalp { margin: 0.15rem 0 0; color: var(--tyst); font-size: 0.88rem; }
+.inst-kontroll { flex: none; color: var(--tyst); }
+.inst-kontroll .lank { color: var(--text); }
+.inst-sammanfattning { margin: 0 0 0.6rem; }
+.inst-fraga { background: var(--yta); border-radius: 8px; padding: 1rem 1.2rem 0.4rem; margin: 0.6rem 0; }
+.inst-fraga p { margin: 0 0 0.8rem; }
+.inst-grupp .meddelande { margin: 0.4rem 0; }
+.inst-grupp .rensa-rad { margin-top: 1.6rem; font-size: 0.88rem; }
+.inst-grupp .rensa-rad .lank { color: var(--tyst); }
+.inst-grupp .rensa-rad .lank:hover { color: var(--text); }
+
+/* Segmenterat val: [ A | B | C ] */
+.val { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--svag); border-radius: 999px; }
+.val button {
+  font: inherit; font-size: 0.92rem; color: var(--tyst); background: none;
+  border: 0; border-radius: 999px; padding: 0.4rem 0.95rem; cursor: pointer;
+}
+.val button:hover { color: var(--text); }
+.val button[aria-pressed="true"] { color: var(--text); background: var(--yta); font-weight: 600; }
+@media (pointer: coarse), (max-width: 560px) {
+  .val button { padding: 0.6rem 0.95rem; }
+  .inst-kontroll .lank { display: inline-block; padding: 0.6rem 0; }
+}
+.inst-kontroll { display: flex; align-items: center; gap: 0.4rem; }
+.inst-kontroll .knapp { margin-right: 0; }
