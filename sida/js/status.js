@@ -12,7 +12,8 @@
 
   // data.uppgifter[id] = { status, tid, historik: [{ status, tid }] }
   // status null betyder "ej gjord" (posten finns kvar för historikens skull).
-  let data = { version: 1, uppgifter: {} };
+  // data.sparade[id] = tid då uppgiften sparades (bokmärke)
+  let data = { version: 1, uppgifter: {}, sparade: {} };
   let sparbar = true;
   let fore = null; // kopia före senaste rensa/import, för Ångra
   const lyssnare = [];
@@ -23,7 +24,9 @@
       const r = localStorage.getItem(NYCKEL);
       if (r) {
         const d = JSON.parse(r);
-        if (d && typeof d.uppgifter === "object") data = { version: 1, uppgifter: d.uppgifter };
+        if (d && typeof d.uppgifter === "object") {
+          data = { version: 1, uppgifter: d.uppgifter, sparade: d.sparade && typeof d.sparade === "object" ? d.sparade : {} };
+        }
       }
     } catch (e) {
       sparbar = false;
@@ -73,6 +76,7 @@
       version: 1,
       exporterad: new Date().toISOString(),
       uppgifter: data.uppgifter,
+      sparade: data.sparade,
     };
   }
 
@@ -88,19 +92,23 @@
       }
       ut[id] = { status: p.status, tid: p.tid, historik: Array.isArray(p.historik) ? p.historik : [] };
     }
-    return { ok: true, uppgifter: ut, antal: Object.values(ut).filter((p) => p.status).length };
+    const sparade = {};
+    if (obj.sparade && typeof obj.sparade === "object") {
+      for (const [id, tid] of Object.entries(obj.sparade)) if (!isNaN(Date.parse(tid))) sparade[id] = tid;
+    }
+    return { ok: true, uppgifter: ut, sparade, antal: Object.values(ut).filter((p) => p.status).length };
   }
 
-  function ersattAllt(uppgifter) {
-    fore = data.uppgifter;
-    data = { version: 1, uppgifter };
+  function ersattAllt(uppgifter, sparade) {
+    fore = data;
+    data = { version: 1, uppgifter, sparade: sparade || {} };
     spara();
     meddela();
   }
 
   function rensa() {
-    fore = data.uppgifter;
-    data = { version: 1, uppgifter: {} };
+    fore = data;
+    data = { version: 1, uppgifter: {}, sparade: {} };
     spara();
     meddela();
   }
@@ -108,16 +116,29 @@
   // Ångrar senaste rensa/import. Returnerar true om något återställdes.
   function angra() {
     if (!fore) return false;
-    data = { version: 1, uppgifter: fore };
+    data = fore;
     fore = null;
     spara();
     meddela();
     return true;
   }
 
+  // ---------- Sparade uppgifter (bokmärken) ----------
+  const arSparad = (id) => !!data.sparade[id];
+  function vaxlaSparad(id) {
+    if (data.sparade[id]) delete data.sparade[id];
+    else data.sparade[id] = new Date().toISOString();
+    spara();
+    meddela();
+    return arSparad(id);
+  }
+  // Senast sparad först.
+  const sparadeIds = () => Object.keys(data.sparade).sort((a, b) => Date.parse(data.sparade[b]) - Date.parse(data.sparade[a]));
+
   las();
   window.Status = {
     STATUSAR, get, satt, antalGjorda, antal, exportera, granska, ersattAllt, rensa, angra,
+    arSparad, vaxlaSparad, sparadeIds,
     vidAndring: (f) => lyssnare.push(f),
     get sparbar() { return sparbar; },
   };

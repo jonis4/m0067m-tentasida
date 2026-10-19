@@ -514,3 +514,15 @@ details.pass.hopfallt .rader { opacity: 1; }
   dialog.hjalp .knapp-stor { margin-top: 0.2rem; padding: 0.6rem 1.1rem; }
 }
 .kopiera-rad + .tl-formelblad { margin: 0.8rem 0 0.4rem; }
+
+/* ---------- Bokmärke (spara uppgiften) ---------- */
+.statusvalen { align-items: center; }
+.spara {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.4rem; height: 2.4rem; margin-left: 0.2rem; padding: 0;
+  color: var(--tyst); background: none; border: 0; border-radius: 999px; cursor: pointer;
+}
+.spara:hover { color: var(--text); background: var(--yta); }
+/* Accentfärgen: ditt eget val. */
+.spara[aria-pressed="true"] { color: var(--accent); }
+.spara[aria-pressed="true"] path { fill: currentColor; }

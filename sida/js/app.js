@@ -11,6 +11,7 @@
     ["tenta", "Gamla tentor"],
     ["ovningstenta", "Övningstentor"],
     ["diagnos", "Diagnoser"],
+    ["sparade", "Sparade"],
   ];
   const TYPNAMN = { tenta: "Gammal tenta", ovningstenta: "Övningstenta", diagnos: "Diagnostiskt test" };
   const tentaMap = Object.fromEntries(B.tentor.map((t) => [t.id, t]));
@@ -139,8 +140,28 @@
     const s = Status.get(id);
     return Object.entries(Status.STATUSAR).map(([k, namn], i) =>
       '<button type="button" class="statusval" data-status="' + k + '" aria-pressed="' + (!!s && s.status === k) + '"'
-      + ' title="Tangent ' + (i + 1) + '">' + namn + "</button>").join("");
+      + ' title="Tangent ' + (i + 1) + '">' + namn + "</button>").join("")
+      + sparaKnapp(id);
   }
+
+  // Bokmärke: sparar uppgiften under Bank → Sparade.
+  const BOKMARKE = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">'
+    + '<path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+  function sparaKnapp(id) {
+    const p = Status.arSparad(id);
+    return '<button type="button" class="spara" data-spara="' + id + '" aria-pressed="' + p + '" aria-label="'
+      + (p ? "Sparad. Tryck för att ta bort" : "Spara uppgiften") + '" title="' + (p ? "Sparad (S)" : "Spara uppgiften (S)") + '">' + BOKMARKE + "</button>";
+  }
+  function vaxlaSpara(knapp) {
+    const p = Status.vaxlaSparad(knapp.dataset.spara);
+    knapp.setAttribute("aria-pressed", String(p));
+    knapp.setAttribute("aria-label", p ? "Sparad. Tryck för att ta bort" : "Spara uppgiften");
+    knapp.title = p ? "Sparad (S)" : "Spara uppgiften (S)";
+  }
+  document.addEventListener("click", (e) => {
+    const k = e.target.closest("[data-spara]");
+    if (k) vaxlaSpara(k);
+  });
 
   function kontextrad(foralder, hoger) {
     return '<div class="kontext"><a href="' + esc(foralder) + '" class="tillbaka" data-tillbaka="' + esc(foralder) + '">← Tillbaka</a>'
@@ -612,6 +633,19 @@
     const flikar = FILTER.map(([k, namn]) =>
       '<a href="#/bank' + (k === "alla" ? "" : "?visa=" + k) + '" data-ersatt'
       + (k === filter ? ' aria-current="page"' : "") + ">" + namn + "</a>").join("");
+    if (filter === "sparade") {
+      const ids = Status.sparadeIds().filter((id) => B.uppgifter[id]);
+      const lista = ids.length
+        ? '<ul class="rader">' + ids.map((id) => {
+          const u = B.uppgifter[id];
+          return '<li><a href="#/bank/sparade/' + id + '">' + statusEtikett(id)
+            + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr
+            + ' <span class="tyst">· ' + esc(B.typer[u.typ].namn) + "</span></span>"
+            + '<span class="pil" aria-hidden="true">→</span></a></li>';
+        }).join("") + "</ul>"
+        : '<p class="tyst">Inga sparade uppgifter än. Tryck på bokmärket bredvid <em>Gjord med hjälp · Gjord själv · Sitter</em> i en uppgift för att spara den här.</p>';
+      return '<h1 class="dold">Bank</h1><nav class="flikar" aria-label="Filter">' + flikar + "</nav>" + lista;
+    }
     const rader = B.tentor
       .filter((t) => filter === "alla" || t.typ === filter)
       .map((t) =>
@@ -770,6 +804,18 @@
     if (k) kopiera(k);
   });
 
+  function sparadeKontext(id) {
+    const ids = Status.sparadeIds().filter((x) => B.uppgifter[x]);
+    return {
+      ids: ids.includes(id) ? ids : [id],
+      href: (x) => "#/bank/sparade/" + x,
+      foralder: "#/bank?visa=sparade",
+      foralderNamn: "Sparade",
+      sistaText: "Tillbaka till sparade",
+      visaKalla: true,
+    };
+  }
+
   function bankKontext(tenta) {
     return {
       ids: tenta.uppgifter,
@@ -854,6 +900,7 @@
       html = vyUppgift(B.uppgifter[a2], kapitelKontext(a1));
     }
     else if (vy === "bank" && delar.length === 1) html = vyBank(q);
+    else if (vy === "bank" && a1 === "sparade" && B.uppgifter[a2] && delar.length === 3) html = vyUppgift(B.uppgifter[a2], sparadeKontext(a2));
     else if (vy === "bank" && tentaMap[a1] && delar.length === 2) html = vyTenta(tentaMap[a1]);
     else if (vy === "bank" && tentaMap[a1] && B.uppgifter[a1 + "-" + a2] && delar.length === 3) {
       html = vyUppgift(B.uppgifter[a1 + "-" + a2], bankKontext(tentaMap[a1]));
@@ -1033,7 +1080,7 @@
     if (handling === "rensa") sidfotLage = { typ: "rensa" };
     else if (handling === "avbryt") sidfotLage = null;
     else if (handling === "importera-ok") {
-      Status.ersattAllt(sidfotLage.granskning.uppgifter);
+      Status.ersattAllt(sidfotLage.granskning.uppgifter, sidfotLage.granskning.sparade);
       sidfotLage = { typ: "meddelande", text: "Kopian är inläst.", angra: true, ny: true };
       rendera();
       return;
@@ -1059,7 +1106,7 @@
     return '<h2 id="hjalp-rubrik">Så funkar sidan</h2><ul>'
       + "<li><strong>Idag:</strong> passet du ska göra nu. Sist ligger en repetition.</li>"
       + scheman
-      + "<li><strong>Bank:</strong> alla 81 uppgifter från 9 tentor.</li>"
+      + "<li><strong>Bank:</strong> alla 81 uppgifter från 9 tentor, och de du sparat med bokmärket.</li>"
       + "<li><strong>Kapitel:</strong> uppgifterna per avsnitt.</li>"
       + "<li><strong>Lösningen är dold</strong> tills du klickar. Markera sedan hur det gick.</li>"
       + "<li><strong>Tentaläge:</strong> <em>Skriv som tenta</em> i Bank.</li>"
@@ -1098,6 +1145,7 @@
     else if (e.key === "ArrowRight" && tangentKontext.nasta) ga(tangentKontext.nasta, { ersatt: true });
     else if ((e.key === "k" || e.key === "K") && app.querySelector(".kopiera")) kopiera(app.querySelector(".kopiera"));
     else if ((e.key === "f" || e.key === "F") && app.querySelector("[data-formelblad]")) vaxlaFormelblad();
+    else if ((e.key === "s" || e.key === "S") && app.querySelector("[data-spara]")) vaxlaSpara(app.querySelector("[data-spara]"));
     else if (e.key === "l" || e.key === "L") {
       const k = app.querySelector(".visa-losning");
       if (!k) return;
