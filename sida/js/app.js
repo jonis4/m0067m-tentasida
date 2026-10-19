@@ -1146,8 +1146,13 @@
   function hjalpHtml() {
     const scheman = Object.keys(SCHEMOR).length
       ? "<li><strong>Schema:</strong> du använder " + esc(S.namn) + ". "
-        + Object.values(SCHEMOR).concat([window.SCHEMA]).filter((x) => x !== S).map((x) => esc(x.namn)).join(" och ")
-        + " finns också, under Inställningar.</li>"
+        + (() => {
+          const andra = [window.SCHEMA].concat(Object.values(SCHEMOR)).filter((x) => x !== S);
+          if (andra.length === 1) return esc(andra[0].namn) + " finns också";
+          const kort = andra.map((x) => esc(x.namn.replace(/ schema$/, "")));
+          return kort.slice(0, -1).join(", ") + " och " + kort[kort.length - 1] + " scheman finns också";
+        })()
+        + ", under Inställningar.</li>"
       : "";
     return '<h2 id="hjalp-rubrik">Så funkar sidan</h2><ul>'
       + "<li><strong>Idag:</strong> passet du ska göra nu. Sist ligger en repetition.</li>"
