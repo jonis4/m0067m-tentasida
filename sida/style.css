@@ -591,3 +591,24 @@ body.tentalage .avslut .nasta { margin-left: 0; flex: 1 1 100%; }
 }
 .inst-kontroll { display: flex; align-items: center; gap: 0.4rem; }
 .inst-kontroll .knapp { margin-right: 0; }
+
+/* Segmenterat val i iPhone-stil: grått spår, lika breda alternativ, det valda ligger ljust och upphöjt ovanpå. */
+:root { --vald: #ffffff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --vald: #3a3a3a; } }
+:root[data-theme="dark"] { --vald: #3a3a3a; }
+.val {
+  display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  padding: 3px; gap: 0; border: 0; border-radius: 10px; background: var(--yta);
+}
+.val button {
+  font: inherit; font-size: 0.92rem; color: var(--tyst); background: none;
+  border: 0; border-radius: 8px; padding: 0.38rem 1rem; cursor: pointer; white-space: nowrap;
+}
+.val button:hover { color: var(--text); }
+.val button[aria-pressed="true"] {
+  color: var(--text); background: var(--vald); font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+@media (pointer: coarse), (max-width: 560px) {
+  .val button { padding: 0.55rem 1rem; }
+}

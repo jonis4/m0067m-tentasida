@@ -984,8 +984,9 @@
         return instRad("Kopia på disken", "<strong>Kunde inte skriva till " + esc(Sparfil.namn || "filen") + ".</strong>",
           lank("sparfil-valj", "Välj fil igen") + " · " + lank("sparfil-sluta", "Stäng av"));
       default:
-        return instRad("Kopia på disken", "Av. Välj en fil så uppdateras den automatiskt. Skyddar om webbläsardatan rensas.",
-          '<button type="button" class="knapp" data-sidfot="sparfil-valj">Välj fil…</button>');
+        return instRad("Kopia på disken", "Sparar filen m0067m-status.json i en mapp du väljer, t.ex. <em>tentor</em>. "
+          + "Den uppdateras sedan automatiskt och skyddar om webbläsardatan rensas.",
+          '<button type="button" class="knapp" data-sidfot="sparfil-valj">Spara kopia…</button>');
     }
   }
 
@@ -1021,7 +1022,7 @@
             + (sidfotLage.angra ? ' <button type="button" class="lank" data-sidfot="angra">Ångra</button>' : "") + "</p>"
           : "")
         + kopiaRad()
-        + instRad("Flytta till en annan dator", "Ladda ner en kopia här och läs in den där.",
+        + instRad("Flytta till en annan dator", "Ladda ner ger filen m0067m-status-&lt;datum&gt;.json. Läs in den på den andra datorn.",
           '<button type="button" class="knapp" data-sidfot="exportera">Ladda ner</button>'
           + '<button type="button" class="knapp" data-sidfot="importera">Läs in</button>')
         + '<p class="rensa-rad"><button type="button" class="lank" data-sidfot="rensa">Rensa all data</button></p>';
