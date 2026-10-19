@@ -526,3 +526,35 @@ details.pass.hopfallt .rader { opacity: 1; }
 /* Accentfärgen: ditt eget val. */
 .spara[aria-pressed="true"] { color: var(--accent); }
 .spara[aria-pressed="true"] path { fill: currentColor; }
+
+/* ---------- Enklare uppgiftsvy ---------- */
+/* Rubrik: titel och meta till vänster, bokmärket till höger */
+.uppgift-huvud { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.6rem; }
+.uppgift-titel h1 { margin: 0; }
+.uppgift-huvud .meta { margin: 0.35rem 0 0; }
+.uppgift-huvud .spara { flex: none; margin: -0.1rem -0.5rem 0 0; }
+
+/* Verktygsraden: lågmäld, direkt under uppgiften */
+.verktyg { margin: 0.8rem 0 0; font-size: 0.88rem; color: var(--tyst); }
+.verktyg .lank, .verktyg a { color: var(--tyst); }
+.verktyg .lank:hover, .verktyg a:hover, .verktyg .lank[aria-expanded="true"] { color: var(--text); }
+
+.losning { margin: 2.4rem 0 0; }
+.losningstext .kalla { margin-top: 1.4rem; }
+
+/* Avslut: statusvalen och Nästa på samma rad */
+.avslut { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.4rem 2rem; margin-top: 2.8rem; }
+.avslut .status { margin: 0; }
+.avslut .nasta { margin: 0; margin-left: auto; }
+body.tentalage .avslut .nasta { margin-left: 0; flex: 1 1 100%; }
+.nasta a.knapp-stor { padding: 0.7rem 1.2rem; }
+.nasta a.knapp-stor:hover { text-decoration: none; background: var(--svag); }
+@media (max-width: 560px) {
+  .statusvalen { gap: 0.35rem; }
+  .statusval { padding: 0.45rem 0.7rem; font-size: 0.9rem; }
+  .avslut .nasta { flex: 1 1 100%; }
+  .avslut .nasta a.knapp-stor { display: block; width: 100%; text-align: center; }
+}
+@media (pointer: coarse), (max-width: 560px) {
+  .verktyg a, .verktyg .lank { display: inline-block; padding: 0.65rem 0; }
+}

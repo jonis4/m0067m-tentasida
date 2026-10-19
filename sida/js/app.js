@@ -140,8 +140,7 @@
     const s = Status.get(id);
     return Object.entries(Status.STATUSAR).map(([k, namn], i) =>
       '<button type="button" class="statusval" data-status="' + k + '" aria-pressed="' + (!!s && s.status === k) + '"'
-      + ' title="Tangent ' + (i + 1) + '">' + namn + "</button>").join("")
-      + sparaKnapp(id);
+      + ' title="Tangent ' + (i + 1) + '">' + namn + "</button>").join("");
   }
 
   // Bokmärke: sparar uppgiften under Bank → Sparade.
@@ -485,9 +484,10 @@
       : '<section class="losning"><h2 class="del">Lösningsförslag</h2>'
         + (u.losning === null ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>'
           : '<div class="text">' + Format.formatera(u.losning, tenta.pdf[tenta.pdf.length - 1], id + " lösning") + "</div>")
-        + mallHtml(u)
-        + "</section>"
-        + '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
+        + mallHtml(u) + losningsPdf(tenta)
+        + "</section>";
+    const status = !genomgang ? ""
+      : '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
         + '<div class="statusvalen">' + statusKnappar(id) + "</div></section>";
 
     const nastaLank = i + 1 < tl.uppgifter.length
@@ -506,13 +506,13 @@
         + Format.formatera(B.profil.formelblad, null, "formelblad") + "</div>" : "")
       + '<nav class="tl-nr" aria-label="Uppgifter">' + nrlista + "</nav>"
       + '<article class="uppgift">'
-      + '<header class="uppgift-huvud"><h1>Uppgift ' + u.nr + "</h1>"
-      + '<p class="meta">' + u.poang + " p · " + (u.del === "G" ? "del för godkänt" : "del för högre betyg")
-      + (genomgang ? " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) : "") + "</p></header>"
+      + uppgiftHuvud(u, u.poang + " p · " + (u.del === "G" ? "del för godkänt" : "del för högre betyg")
+        + (genomgang ? " · " + esc(B.typer[u.typ].namn) + " · " + esc(avsnittText(u)) : ""), genomgang)
       + '<div class="text">' + Format.formatera(u.uppgift, tenta.pdf[0], id + " uppgift") + "</div>"
       + (genomgang ? kopieraKnapp(u, true) : "")
       + losning
-      + '<nav class="nasta">' + (i > 0 ? '<a href="' + href(i - 1) + '" data-ersatt>← Föregående</a>' : "<span></span>") + nastaLank + "</nav>"
+      + '<div class="avslut">' + status
+      + '<nav class="nasta">' + (i > 0 ? '<a href="' + href(i - 1) + '" data-ersatt>← Föregående</a>' : "<span></span>") + nastaLank + "</nav></div>"
       + "</article>";
   }
 
@@ -683,6 +683,13 @@
       + '<h2 class="del">Del för högre betyg</h2><ul class="rader">' + vg.map(rad).join("") + "</ul>";
   }
 
+  const delText = (u) => '<span title="' + (u.del === "G" ? "Del för godkänt" : "Del för högre betyg") + '">del ' + u.del + "</span>";
+
+  function uppgiftHuvud(u, meta, medBokmarke) {
+    return '<header class="uppgift-huvud"><div class="uppgift-titel"><h1>Uppgift ' + u.nr + "</h1>"
+      + '<p class="meta">' + meta + "</p></div>" + (medBokmarke ? sparaKnapp(u.id) : "") + "</header>";
+  }
+
   // ctx: { ids, href(id), foralder, foralderNamn, sistaText, visaKalla }
   function vyUppgift(u, ctx) {
     const tenta = tentaMap[u.tenta];
@@ -698,7 +705,6 @@
     const losning = u.losning === null
       ? '<p class="saknas">Lösningsförslag saknas i materialet.</p>' + mallHtml(u)
       : '<p class="visa-rad"><button type="button" class="lank visa-losning" aria-expanded="false" aria-controls="losning">Visa lösningsförslag</button></p>'
-        + strategiRad(3)
         + '<div id="losning" class="losningstext" hidden></div>';
 
     const nastaLank = nasta
@@ -707,17 +713,13 @@
 
     const html = kontextrad(ctx.foralder, ctx.foralderNamn)
       + '<article class="uppgift">'
-      + '<header class="uppgift-huvud"><h1>Uppgift ' + u.nr + "</h1>"
-      + '<p class="meta">' + (ctx.visaKalla ? esc(tenta.namn) + " · " : "")
-      + '<span title="' + (u.del === "G" ? "Del för godkänt" : "Del för högre betyg") + '">' + u.del + "</span>"
-      + " · " + esc(avsnittText(u)) + " · " + esc(B.typer[u.typ].namn) + "</p></header>"
+      + uppgiftHuvud(u, (ctx.visaKalla ? esc(tenta.namn) + " · " : "") + delText(u) + " · " + esc(B.typer[u.typ].namn) + " · " + esc(avsnittText(u)), true)
       + '<div class="text">' + Format.formatera(u.uppgift, figurPdfUppgift, kalla + " uppgift") + "</div>"
       + kopieraKnapp(u, false)
       + '<section class="losning">' + losning + "</section>"
-      + '<section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
+      + '<div class="avslut"><section class="status" aria-labelledby="status-rubrik"><h2 id="status-rubrik">Hur gick det?</h2>'
       + '<div class="statusvalen">' + statusKnappar(u.id) + "</div></section>"
-      + '<p class="kalla">Original: ' + pdfLankar(tenta) + "</p>"
-      + '<nav class="nasta">' + nastaLank + "</nav>"
+      + '<nav class="nasta">' + nastaLank + "</nav></div>"
       + "</article>";
 
     // Lösningen renderas först när man klickar, så den finns inte ens i sidan innan dess.
@@ -729,13 +731,14 @@
       knapp.addEventListener("click", () => {
         const visas = knapp.getAttribute("aria-expanded") === "true";
         if (!visas && !ruta.innerHTML) {
-          ruta.innerHTML = '<div class="text">' + Format.formatera(u.losning, figurPdfLosning, kalla + " lösning") + "</div>"
-            + mallHtml(u);
+          ruta.innerHTML = strategiRad(3)
+            + '<div class="text">' + Format.formatera(u.losning, figurPdfLosning, kalla + " lösning") + "</div>"
+            + mallHtml(u) + losningsPdf(tenta);
         }
         ruta.hidden = visas;
         knapp.setAttribute("aria-expanded", String(!visas));
         const kk = app.querySelector(".kopiera");
-        if (kk) { kk.dataset.medLosning = visas ? "0" : "1"; kk.textContent = visas ? "Kopiera uppgiften" : "Kopiera uppgift och lösning"; }
+        if (kk) { kk.dataset.medLosning = visas ? "0" : "1"; kk.textContent = visas ? "Kopiera uppgiften" : "Kopiera med lösning"; }
         knapp.textContent = visas ? "Visa lösningsförslag" : "Dölj lösningsförslag";
       });
     });
@@ -758,11 +761,22 @@
   }
 
   // Raden under uppgiften: Kopiera uppgiften · Formelblad (formelbladet fälls ut under raden).
+  // Verktygsraden under uppgiften: Formelblad · Kopiera uppgiften · PDF (uppgifternas original).
   function kopieraKnapp(u, medLosning) {
-    return '<p class="kopiera-rad"><button type="button" class="lank kopiera" data-kopiera="' + u.id + '" data-med-losning="' + (medLosning ? 1 : 0) + '">'
-      + (medLosning && u.losning ? "Kopiera uppgift och lösning" : "Kopiera uppgiften") + "</button>"
-      + ' · <button type="button" class="lank" data-formelblad aria-expanded="false" aria-controls="formelblad-ruta" title="Tangent F">Formelblad</button></p>'
+    const pdf = tentaMap[u.tenta].pdf[0];
+    return '<p class="kopiera-rad verktyg">'
+      + '<button type="button" class="lank" data-formelblad aria-expanded="false" aria-controls="formelblad-ruta" title="Formelbladet från tentan (F)">Formelblad</button>'
+      + ' · <button type="button" class="lank kopiera" data-kopiera="' + u.id + '" data-med-losning="' + (medLosning ? 1 : 0) + '"'
+      + ' title="Kopiera för att klistra in i en AI (K)">' + (medLosning && u.losning ? "Kopiera med lösning" : "Kopiera uppgiften") + "</button>"
+      + ' · <a href="' + esc(encodeURI(pdf)) + '" target="_blank" rel="noopener" title="Uppgiften i original-PDF:en">PDF</a></p>'
       + '<div id="formelblad-ruta" class="tl-formelblad text" hidden></div>';
+  }
+
+  // Länk till lösningsförslaget i original, visas först inne i den öppnade lösningen.
+  function losningsPdf(tenta) {
+    if (!tenta.harLosning) return "";
+    return '<p class="kalla">Lösningsförslaget i original: <a href="' + esc(encodeURI(tenta.pdf[tenta.pdf.length - 1]))
+      + '" target="_blank" rel="noopener">PDF</a></p>';
   }
 
   function vaxlaFormelblad() {
