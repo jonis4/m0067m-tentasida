@@ -612,3 +612,19 @@ body.tentalage .avslut .nasta { margin-left: 0; flex: 1 1 100%; }
 @media (pointer: coarse), (max-width: 560px) {
   .val button { padding: 0.55rem 1rem; }
 }
+
+/* ---------- Tentan: uppgifterna på sin plats i tentan ---------- */
+/* Delad stapel: sitter (accent), gjord själv (text), med hjälp (tyst). Tomt = ej gjord. */
+.stapel.delad { display: flex; }
+.stapel.delad > span { flex: none; }
+.stapel.delad > .del-sitter { background: var(--accent); }
+.stapel.delad > .del-sjalv { background: var(--text); }
+.stapel.delad > .del-hjalp { background: var(--tyst); opacity: 0.6; }
+.tentan .rad-namn { flex: 1; }
+.tentan .sakerhet { width: 3rem; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.tentan + h2.del { margin-top: 2.4rem; }
+@media (max-width: 560px) {
+  .tentan .kapitelrad { flex-wrap: wrap; row-gap: 0.3rem; }
+  .tentan .kapitelrad .rad-namn { flex: 1 0 calc(100% - 3.2rem); }
+  .tentan .stapel { margin-left: 3.2rem; flex: 1; width: auto; }
+}

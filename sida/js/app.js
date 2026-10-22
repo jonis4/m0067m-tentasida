@@ -25,6 +25,33 @@
       for (const a of u.avsnitt) perAvsnitt[a][u.typ === "bevis" ? "bevis" : "ovning"].push(id);
     }
   }
+  // Tentans nio platser → uppgifts-id. Tentor och övningstentor har redan tentans upplägg, så där
+  // är platsen uppgiftens nummer. Diagnoserna har ett annat upplägg: där avgör typen, och en typ
+  // hamnar på den plats där den oftast står i tentorna (lägst nummer vid lika).
+  const PLATSER = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const somTenta = (u) => tentaMap[u.tenta].typ !== "diagnos";
+  const typPlats = {};
+  {
+    const rakna = {};
+    for (const u of Object.values(B.uppgifter)) {
+      if (!somTenta(u)) continue;
+      const r = rakna[u.typ] || (rakna[u.typ] = {});
+      r[u.nr] = (r[u.nr] || 0) + 1;
+    }
+    for (const [typ, r] of Object.entries(rakna)) {
+      typPlats[typ] = +Object.keys(r).sort((a, b) => r[b] - r[a] || a - b)[0];
+    }
+  }
+  const platsAv = (u) => somTenta(u) ? u.nr : typPlats[u.typ] || u.nr;
+  const perPlats = Object.fromEntries(PLATSER.map((p) => [p, []]));
+  for (const t of B.tentor) for (const id of t.uppgifter) perPlats[platsAv(B.uppgifter[id])].push(id);
+  // Platsens namn: typerna som står där, vanligast först.
+  const platsNamn = Object.fromEntries(PLATSER.map((p) => {
+    const n = {};
+    for (const id of perPlats[p]) n[B.uppgifter[id].typ] = (n[B.uppgifter[id].typ] || 0) + 1;
+    return [p, Object.keys(n).sort((a, b) => n[b] - n[a]).slice(0, 3).map((t) => B.typer[t].namn).join(" · ")];
+  }));
+
   // ---------- Schema och datum ----------
   // Vilket schema som används: standard (window.SCHEMA) eller ett valt ur window.SCHEMOR (t.ex. Eriks).
   const SCHEMA_NYCKEL = "m0067m.schema";
@@ -627,6 +654,62 @@
       + '<ul class="kapitellista">' + rader + "</ul>";
   }
 
+  // ---------- Tentan: alla uppgifter på sin plats i tentans upplägg ----------
+  // Säkerhet = snittet av de gjorda uppgifterna, där med hjälp = 1/3, själv = 2/3 och sitter = 1.
+  const SAKERHET = { hjalp: 1 / 3, sjalv: 2 / 3, sitter: 1 };
+
+  function platsStapel(ids) {
+    const n = { sitter: 0, sjalv: 0, hjalp: 0 };
+    for (const id of ids) { const s = Status.get(id); if (s) n[s.status]++; }
+    const gjorda = n.sitter + n.sjalv + n.hjalp;
+    const sak = gjorda ? Math.round((100 * (n.sitter + (2 * n.sjalv + n.hjalp) / 3)) / gjorda) : null;
+    const del = (k) => n[k] ? '<span class="del-' + k + '" style="width:' + (100 * n[k]) / ids.length + '%"></span>' : "";
+    const etikett = n.sitter + " sitter, " + n.sjalv + " själv, " + n.hjalp + " med hjälp av " + ids.length;
+    return '<span class="stapel delad" role="img" aria-label="' + etikett + '">' + del("sitter") + del("sjalv") + del("hjalp") + "</span>"
+      + '<span class="rad-meta antal">' + gjorda + "/" + ids.length + "</span>"
+      + '<span class="rad-meta sakerhet" title="Säkerhet på de gjorda uppgifterna">' + (sak === null ? "–" : sak + " %") + "</span>";
+  }
+
+  function vyTentan(oppen) {
+    document.title = (oppen ? "Uppgift " + oppen + " · " : "") + "Tentan · M0067M";
+    const rad = (p) => {
+      const ids = perPlats[p];
+      const ar = p === oppen;
+      let html = '<li class="kapitel' + (ar ? " oppen" : "") + '" id="plats-' + p + '">'
+        + '<a class="kapitelrad" href="#/tentan' + (ar ? "" : "/" + p) + '" data-ersatt aria-expanded="' + ar + '">'
+        + '<span class="avsnitt-nr">' + p + '</span><span class="rad-namn">' + esc(platsNamn[p]) + "</span>"
+        + platsStapel(ids) + "</a>";
+      if (ar) {
+        const forsta = ids.find((id) => !klarad(id)) || ids[0];
+        html += '<div class="utfallt"><ul class="rader">' + ids.map((id) => {
+          const u = B.uppgifter[id];
+          return '<li><a href="#/tentan/' + p + "/" + id + '">' + statusEtikett(id)
+            + '<span class="rad-namn">' + esc(tentaMap[u.tenta].namn) + ", uppg. " + u.nr
+            + ' <span class="tyst">· ' + esc(B.typer[u.typ].namn) + "</span></span>"
+            + '<span class="pil" aria-hidden="true">→</span></a></li>';
+        }).join("") + "</ul>"
+          + '<p><a class="knapp-stor" href="#/tentan/' + p + "/" + forsta + '">Öva uppgift ' + p + "</a></p></div>";
+      }
+      return html + "</li>";
+    };
+    return '<h1 class="dold">Tentan</h1>'
+      + '<p class="tyst forklaring">Varje uppgift i banken står på den plats i tentan där den passar. '
+      + "Siffran är hur många du gjort, procenten hur säker du är på dem: 100 % om alla sitter, 33 % om alla är gjorda med hjälp.</p>"
+      + '<h2 class="del">Del för godkänt</h2><ul class="kapitellista tentan">' + PLATSER.slice(0, 6).map(rad).join("") + "</ul>"
+      + '<h2 class="del">Del för högre betyg</h2><ul class="kapitellista tentan">' + PLATSER.slice(6).map(rad).join("") + "</ul>";
+  }
+
+  function tentanKontext(p) {
+    return {
+      ids: perPlats[p],
+      href: (id) => "#/tentan/" + p + "/" + id,
+      foralder: "#/tentan/" + p,
+      foralderNamn: "Uppgift " + p + " på tentan",
+      sistaText: "Tillbaka till tentan",
+      visaKalla: true,
+    };
+  }
+
   function vyBank(q) {
     document.title = "Bank · M0067M";
     const filter = FILTER.some(([k]) => k === q.get("visa")) ? q.get("visa") : "alla";
@@ -913,6 +996,14 @@
     else if (vy === "kapitel" && perAvsnitt[a1] && delar.length === 3 && kapitelKontext(a1).ids.includes(a2)) {
       html = vyUppgift(B.uppgifter[a2], kapitelKontext(a1));
     }
+    else if (vy === "tentan" && delar.length === 1) html = vyTentan(null);
+    else if (vy === "tentan" && perPlats[a1] && delar.length === 2) {
+      html = vyTentan(+a1);
+      rullaTill = "plats-" + a1;
+    }
+    else if (vy === "tentan" && perPlats[a1] && delar.length === 3 && perPlats[a1].includes(a2)) {
+      html = vyUppgift(B.uppgifter[a2], tentanKontext(+a1));
+    }
     else if (vy === "bank" && delar.length === 1) html = vyBank(q);
     else if (vy === "bank" && a1 === "sparade" && B.uppgifter[a2] && delar.length === 3) html = vyUppgift(B.uppgifter[a2], sparadeKontext(a2));
     else if (vy === "bank" && tentaMap[a1] && delar.length === 2) html = vyTenta(tentaMap[a1]);
@@ -1159,6 +1250,7 @@
       + scheman
       + "<li><strong>Bank:</strong> alla 81 uppgifter från 9 tentor, och de du sparat med bokmärket.</li>"
       + "<li><strong>Kapitel:</strong> uppgifterna per avsnitt.</li>"
+      + "<li><strong>Tentan:</strong> uppgifterna på sin plats i tentan, 1–9, med hur mycket du övat och hur säker du är.</li>"
       + "<li><strong>Lösningen är dold</strong> tills du klickar. Markera sedan hur det gick.</li>"
       + "<li><strong>Tentaläge:</strong> <em>Skriv som tenta</em> i Bank.</li>"
       + "<li><strong>Kopiera uppgiften</strong> för att fråga en AI.</li>"
