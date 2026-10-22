@@ -345,6 +345,13 @@
   }
 
   function repeteraKontext(id) {
+    // Efter omladdning finns ingen lista från Idag: räkna fram den igen.
+    if (!repeteraFrys.length) {
+      const dag = dagMap[idagIso()];
+      const repId = dagensRepetition(dag, idagIso());
+      repeteraFrys = repeteraLista(dag).filter((x) => x !== repId);
+      if (!repeteraFrys.includes(id)) repeteraFrys.unshift(id);
+    }
     return {
       ids: repeteraFrys.includes(id) ? repeteraFrys : [id],
       href: (x) => "#/idag/repetera/" + x,
@@ -1309,6 +1316,27 @@
     } else if (a.hasAttribute("data-ersatt")) {
       e.preventDefault();
       ga(a.getAttribute("href"), { ersatt: true });
+    }
+  });
+
+  // Status ändrad i en annan flik. I en uppgift uppdateras bara knapparna, så att en öppnad
+  // lösning inte stängs. Listor ritas om på samma scrollläge.
+  Status.vidAndringIAnnanFlik(() => {
+    if (app.querySelector(".uppgift")) {
+      const id = tangentKontext && tangentKontext.uppgift;
+      const s = id && Status.get(id);
+      app.querySelectorAll(".statusval").forEach((b) => b.setAttribute("aria-pressed", String(!!s && s.status === b.dataset.status)));
+      app.querySelectorAll("[data-spara]").forEach((k) => {
+        const p = Status.arSparad(k.dataset.spara);
+        k.setAttribute("aria-pressed", String(p));
+        k.setAttribute("aria-label", p ? "Sparad. Tryck för att ta bort" : "Spara uppgiften");
+        k.title = p ? "Sparad (S)" : "Spara uppgiften (S)";
+      });
+      renderaSidfot();
+    } else {
+      const y = window.scrollY;
+      rendera();
+      window.scrollTo(0, y);
     }
   });
 

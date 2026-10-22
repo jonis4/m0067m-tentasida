@@ -52,6 +52,7 @@
   // status: "hjalp" | "sjalv" | "sitter" | null (= ej gjord)
   function satt(id, status) {
     if (status !== null && !STATUSAR[status]) throw new Error("Okänd status: " + status);
+    las(); // en annan flik kan ha sparat sedan vi läste, annars skrivs dess ändringar över
     const tid = new Date().toISOString();
     const p = data.uppgifter[id] || { status: null, tid: null, historik: [] };
     p.status = status;
@@ -126,6 +127,7 @@
   // ---------- Sparade uppgifter (bokmärken) ----------
   const arSparad = (id) => !!data.sparade[id];
   function vaxlaSparad(id) {
+    las();
     if (data.sparade[id]) delete data.sparade[id];
     else data.sparade[id] = new Date().toISOString();
     spara();
@@ -135,11 +137,20 @@
   // Senast sparad först.
   const sparadeIds = () => Object.keys(data.sparade).sort((a, b) => Date.parse(data.sparade[b]) - Date.parse(data.sparade[a]));
 
+  // En annan flik har ändrat statusen: läs in den, så att den här fliken visar och sparar samma sak.
+  const franAnnanFlik = [];
+  window.addEventListener("storage", (e) => {
+    if (e.key !== NYCKEL) return;
+    las();
+    franAnnanFlik.forEach((f) => { try { f(); } catch (err) { console.error(err); } });
+  });
+
   las();
   window.Status = {
     STATUSAR, get, satt, antalGjorda, antal, exportera, granska, ersattAllt, rensa, angra,
     arSparad, vaxlaSparad, sparadeIds,
     vidAndring: (f) => lyssnare.push(f),
+    vidAndringIAnnanFlik: (f) => franAnnanFlik.push(f),
     get sparbar() { return sparbar; },
   };
 })();
